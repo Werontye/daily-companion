@@ -41,6 +41,9 @@ export default function SharedPlansPage() {
   const [plans, setPlans] = useState<SharedPlan[]>(demoPlans)
   const [selectedPlan, setSelectedPlan] = useState<SharedPlan | null>(null)
   const [messageInput, setMessageInput] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newPlanName, setNewPlanName] = useState('')
+  const [newPlanDescription, setNewPlanDescription] = useState('')
 
   const handleSendMessage = (planId: string) => {
     if (!messageInput.trim()) return
@@ -70,6 +73,33 @@ export default function SharedPlansPage() {
     setMessageInput('')
   }
 
+  const handleCreatePlan = () => {
+    if (!newPlanName.trim()) return
+
+    const newPlan: SharedPlan = {
+      id: `plan${Date.now()}`,
+      name: newPlanName,
+      description: newPlanDescription,
+      members: [
+        {
+          id: '1',
+          name: 'You',
+          avatar: '👤',
+          role: 'owner',
+        }
+      ],
+      tasks: [],
+      messages: [],
+      createdAt: new Date(),
+    }
+
+    setPlans([...plans, newPlan])
+    setNewPlanName('')
+    setNewPlanDescription('')
+    setShowCreateModal(false)
+    setSelectedPlan(newPlan)
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto py-8">
@@ -83,7 +113,10 @@ export default function SharedPlansPage() {
                 Collaborate with others on shared task lists
               </p>
             </div>
-            <button className="btn btn-primary flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary flex items-center gap-2"
+            >
               <PlusIcon className="h-5 w-5" />
               Create Shared Plan
             </button>
@@ -291,6 +324,61 @@ export default function SharedPlansPage() {
 
       {/* Global Messenger */}
       <GlobalMessenger />
+
+      {/* Create Plan Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+              Create Shared Plan
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">Plan Name</label>
+                <input
+                  type="text"
+                  value={newPlanName}
+                  onChange={(e) => setNewPlanName(e.target.value)}
+                  placeholder="e.g., Team Project, Family Tasks"
+                  className="input w-full"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="label">Description (optional)</label>
+                <textarea
+                  value={newPlanDescription}
+                  onChange={(e) => setNewPlanDescription(e.target.value)}
+                  placeholder="What's this plan about?"
+                  className="input w-full h-24 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setNewPlanName('')
+                    setNewPlanDescription('')
+                  }}
+                  className="btn btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreatePlan}
+                  disabled={!newPlanName.trim()}
+                  className="btn btn-primary flex-1"
+                >
+                  Create Plan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }
