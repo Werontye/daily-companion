@@ -10,6 +10,7 @@ import { Task } from '@/types'
 import { getTasks, saveTasks } from '@/lib/storage/tasks'
 import { generateDemoTasks } from '@/lib/storage/demoData'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { isDemoMode } from '@/lib/demoMode'
 
 export default function DashboardPage() {
   const { t } = useLanguage()
@@ -21,8 +22,8 @@ export default function DashboardPage() {
     // Load tasks from localStorage on mount
     let loadedTasks = getTasks()
 
-    // If no tasks exist, load demo data
-    if (loadedTasks.length === 0) {
+    // If no tasks exist and in demo mode, load demo data
+    if (loadedTasks.length === 0 && isDemoMode()) {
       loadedTasks = generateDemoTasks()
       saveTasks(loadedTasks)
     }

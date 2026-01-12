@@ -5,6 +5,7 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { PlusIcon, ClockIcon, CheckCircleIcon, XIcon } from '@/components/icons'
 import { Toast } from '@/components/ui/toast/Toast'
 import { getTemplates, saveTemplates } from '@/lib/storage/templates'
+import { isDemoMode } from '@/lib/demoMode'
 
 interface TemplateItem {
   id: string
@@ -122,8 +123,8 @@ export default function TemplatesPage() {
   useEffect(() => {
     let loadedTemplates = getTemplates()
 
-    // If no templates exist, load demo data
-    if (loadedTemplates.length === 0) {
+    // If no templates exist and in demo mode, load demo data
+    if (loadedTemplates.length === 0 && isDemoMode()) {
       loadedTemplates = demoTemplates
       saveTemplates(loadedTemplates)
     }

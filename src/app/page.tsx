@@ -11,13 +11,14 @@ import {
   UserGroupIcon
 } from '@/components/icons'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { resetToDemo } from '@/lib/demoMode'
 
 export default function HomePage() {
   const router = useRouter()
 
   const handleTryDemo = () => {
-    // Clear all user data before entering demo mode
-    localStorage.clear()
+    // Reset to demo mode - clears all data and enables demo mode
+    resetToDemo()
     router.push('/dashboard')
   }
   return (
