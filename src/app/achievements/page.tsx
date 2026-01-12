@@ -239,9 +239,24 @@ export default function AchievementsPage() {
     // Load achievements from localStorage
     let loadedAchievements = getAchievements()
 
-    // If no achievements exist and in demo mode, load demo data
-    if (loadedAchievements.length === 0 && isDemoMode()) {
-      loadedAchievements = demoAchievements
+    // If no achievements exist, initialize with all locked achievements
+    if (loadedAchievements.length === 0) {
+      // Create locked versions of all achievements
+      const lockedAchievements = demoAchievements.map(ach => ({
+        ...ach,
+        unlocked: false,
+        unlockedAt: undefined,
+        progress: 0,
+      }))
+
+      // In demo mode, use the demo data with some unlocked
+      if (isDemoMode()) {
+        loadedAchievements = demoAchievements
+      } else {
+        // For new accounts, show all achievements as locked
+        loadedAchievements = lockedAchievements
+      }
+
       saveAchievements(loadedAchievements)
     }
 
@@ -359,29 +374,34 @@ export default function AchievementsPage() {
                             )}
                           </div>
                         ) : (
-                          achievement.progress !== undefined &&
-                          achievement.maxProgress !== undefined && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                                  Progress
-                                </span>
-                                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                                  {achievement.progress}/{achievement.maxProgress}
-                                </span>
-                              </div>
-                              <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
-                                <div
-                                  className="bg-neutral-500 h-1.5 rounded-full transition-all duration-500"
-                                  style={{
-                                    width: `${
-                                      (achievement.progress / achievement.maxProgress) * 100
-                                    }%`,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )
+                          <div>
+                            {achievement.progress !== undefined && achievement.maxProgress !== undefined ? (
+                              <>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                                    Progress
+                                  </span>
+                                  <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                                    {achievement.progress}/{achievement.maxProgress}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
+                                  <div
+                                    className="bg-neutral-500 h-1.5 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
+                                        (achievement.progress / achievement.maxProgress) * 100
+                                      }%`,
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                                🔒 Locked
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
