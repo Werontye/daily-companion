@@ -36,6 +36,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   ]
 
   useEffect(() => {
+    // Load user data from localStorage
+    const loadUserData = () => {
+      try {
+        const userDataStr = localStorage.getItem('user')
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr)
+          if (userData.displayName) {
+            setUserName(userData.displayName)
+            setUserInitial(userData.displayName.charAt(0).toUpperCase())
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      }
+    }
+
     // Load recent unlocked achievements
     const achievements = getAchievements()
     const unlocked = achievements
@@ -48,18 +64,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       .slice(0, 3)
     setRecentAchievements(unlocked)
 
-    // Load user data from localStorage
-    try {
-      const userDataStr = localStorage.getItem('user')
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr)
-        if (userData.displayName) {
-          setUserName(userData.displayName)
-          setUserInitial(userData.displayName.charAt(0).toUpperCase())
-        }
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error)
+    // Initial load
+    loadUserData()
+
+    // Listen for storage changes
+    window.addEventListener('storage', loadUserData)
+
+    return () => {
+      window.removeEventListener('storage', loadUserData)
     }
   }, [])
 

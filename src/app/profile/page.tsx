@@ -114,6 +114,22 @@ export default function ProfilePage() {
 
     setProfile(editedProfile)
     setIsEditing(false)
+
+    // Update localStorage so mini-profile reflects changes
+    try {
+      const userDataStr = localStorage.getItem('user')
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr)
+        userData.displayName = editedProfile.name
+        localStorage.setItem('user', JSON.stringify(userData))
+
+        // Trigger a storage event to update other components
+        window.dispatchEvent(new Event('storage'))
+      }
+    } catch (error) {
+      console.error('Error updating user in localStorage:', error)
+    }
+
     setToast({ message: 'Profile updated successfully!', type: 'success' })
   }
 
