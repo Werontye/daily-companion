@@ -37,6 +37,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [userInitial, setUserInitial] = useState('U')
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   const navigation = [
     { name: 'Today', href: '/dashboard', icon: CalendarIcon },
@@ -241,13 +242,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Link>
 
               {/* Exit to Home */}
-              <Link
-                href="/"
+              <button
+                onClick={() => setShowLogoutDialog(true)}
                 className="px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-sm font-medium text-neutral-700 dark:text-neutral-300"
                 aria-label="Exit to Home"
               >
                 Exit
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -369,6 +370,49 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      {showLogoutDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-2xl max-w-md w-full p-6 animate-scale-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                Confirm Logout
+              </h3>
+            </div>
+
+            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+              Are you sure you want to exit? You will be returned to the home page.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowLogoutDialog(false)}
+                className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <Link
+                href="/"
+                onClick={() => {
+                  // Clear user session data from localStorage
+                  localStorage.removeItem('user')
+                  localStorage.removeItem('tasks')
+                  localStorage.removeItem('achievements')
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Exit
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

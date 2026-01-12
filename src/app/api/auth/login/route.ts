@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import connectToDatabase from '@/lib/db/mongodb'
+import User from '@/lib/db/models/User'
+import jwt from 'jsonwebtoken'
 
-// NOTE: This shares the same in-memory storage as the main auth route
-// In production, this would use a database
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'your-secret-key-change-this-in-production'
 
 /**
  * POST /api/auth/login - Login user
  */
 export async function POST(request: NextRequest) {
   try {
+    await connectToDatabase()
+
     const body = await request.json()
     const { email, password } = body
 
@@ -18,52 +22,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For demo purposes, we'll accept any password
-    // In production, this would verify password hash
+    // Find user by email (need to explicitly select password field)
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
 
-    // Create a demo user if none exists
-    const demoUser = {
-      id: 'demo-user-' + crypto.randomUUID(),
-      email,
-      displayName: email.split('@')[0],
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-      settings: {
-        theme: 'system' as const,
-        language: 'en' as const,
-        notifications: {
-          enabled: true,
-          sound: true,
-          vibrate: false,
-        },
-        pomodoro: {
-          workDuration: 25,
-          shortBreak: 5,
-          longBreak: 15,
-          longBreakInterval: 4,
-        },
-        privacy: {
-          localOnly: false,
-          encryptData: false,
-          shareAchievements: true,
-        },
-      },
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      )
     }
 
-    // Create session
-    const sessionToken = crypto.randomUUID()
+    // Check if user registered with OAuth (no password)
+    if (!user.password) {
+      return NextResponse.json(
+        { error: `This email is registered with ${user.provider}. Please use ${user.provider} to sign in.` },
+        { status: 401 }
+      )
+    }
+
+    // Verify password
+    const isPasswordValid = await user.comparePassword(password)
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      )
+    }
+
+    // Update last login
+    user.lastLogin = new Date()
+    await user.save()
+
+    // Create JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        email: user.email,
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
 
     const response = NextResponse.json({
       user: {
-        id: demoUser.id,
-        email: demoUser.email,
-        displayName: demoUser.displayName,
-        avatarUrl: demoUser.avatarUrl,
-        settings: demoUser.settings,
+        id: user._id.toString(),
+        email: user.email,
+        displayName: user.displayName,
+        avatar: user.avatar,
+        avatarType: user.avatarType,
+        bio: user.bio,
       },
     })
 
     // Set session cookie
-    response.cookies.set('session', sessionToken, {
+    response.cookies.set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
