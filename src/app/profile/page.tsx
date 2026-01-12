@@ -443,54 +443,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Achievements */}
-            <div className="card">
-              <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-                Recent Achievements
-              </h3>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 text-center">
-                  <div className="text-4xl mb-2">🌅</div>
-                  <div className="font-medium text-neutral-900 dark:text-neutral-100 text-sm mb-1">
-                    Early Bird
-                  </div>
-                  <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                    Jan 10, 2026
-                  </div>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800 text-center">
-                  <div className="text-4xl mb-2">💪</div>
-                  <div className="font-medium text-neutral-900 dark:text-neutral-100 text-sm mb-1">
-                    Week Warrior
-                  </div>
-                  <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                    Jan 8, 2026
-                  </div>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800 text-center">
-                  <div className="text-4xl mb-2">🤝</div>
-                  <div className="font-medium text-neutral-900 dark:text-neutral-100 text-sm mb-1">
-                    Team Player
-                  </div>
-                  <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                    Jan 9, 2026
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 text-center">
-                <a
-                  href="/achievements"
-                  className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-                >
-                  View All Achievements →
-                </a>
-              </div>
-            </div>
-
             {/* Danger Zone */}
             <div className="card border-2 border-red-200 dark:border-red-800">
               <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-6">

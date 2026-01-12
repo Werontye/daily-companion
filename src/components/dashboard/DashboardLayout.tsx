@@ -134,10 +134,108 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         )}
       </nav>
 
-      {/* Main Content */}
-      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 h-[calc(100vh-4rem)] overflow-x-hidden">
-        {children}
-      </main>
+      {/* Main Content with Sidebar */}
+      <div className="flex gap-6 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-x-hidden">
+          {children}
+        </main>
+
+        {/* Right Sidebar - Mini Profile & Achievements */}
+        <aside className="hidden xl:block w-80 flex-shrink-0">
+          <div className="sticky top-24 space-y-6">
+            {/* Mini Profile Card */}
+            <div className="card">
+              <Link href="/profile" className="block hover:opacity-80 transition-opacity">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
+                    U
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-neutral-900 dark:text-neutral-100">
+                      User
+                    </div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                      View Profile →
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600">12</div>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400">Tasks</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-orange-600">8</div>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400">Focus</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-600">3🔥</div>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400">Streak</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Achievements */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
+                  Recent Achievements
+                </h3>
+                <Link href="/achievements" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                  View All
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🌅</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                        Early Bird
+                      </div>
+                      <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                        Jan 10, 2026
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">💪</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                        Week Warrior
+                      </div>
+                      <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                        Jan 8, 2026
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🤝</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                        Team Player
+                      </div>
+                      <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                        Jan 5, 2026
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
