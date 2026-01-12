@@ -45,14 +45,11 @@ export async function POST(request: NextRequest) {
     const newTemplate: Template = {
       id: crypto.randomUUID(),
       ownerId: userId,
-      name: templateData.name,
+      title: templateData.title || templateData.name || 'Untitled Template',
       description: templateData.description,
-      tasks: templateData.tasks || [],
-      category: templateData.category,
-      icon: templateData.icon,
-      color: templateData.color,
+      fields: templateData.fields || {},
+      useCount: 0,
       isPublic: templateData.isPublic || false,
-      usageCount: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
