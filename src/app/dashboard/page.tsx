@@ -34,6 +34,27 @@ export default function DashboardPage() {
     }
   }
 
+  // Check achievements based on user progress
+  const checkAchievements = async () => {
+    try {
+      // Get user stats
+      const statsResponse = await fetch('/api/user/stats')
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        const { completedTasks, currentStreak } = statsData.stats
+
+        // Check achievements
+        await fetch('/api/achievements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completedTasks, currentStreak }),
+        })
+      }
+    } catch (error) {
+      console.error('Error checking achievements:', error)
+    }
+  }
+
   useEffect(() => {
     loadTasks()
   }, [])
@@ -68,6 +89,8 @@ export default function DashboardPage() {
         const data = await response.json()
         // Reload tasks to get updated list
         await loadTasks()
+        // Check for new achievements
+        await checkAchievements()
         setIsAddModalOpen(false)
       } else {
         console.error('Failed to create task:', response.statusText)
@@ -92,6 +115,10 @@ export default function DashboardPage() {
       if (response.ok) {
         // Reload tasks to get updated list
         await loadTasks()
+        // Check for new achievements when marking task as completed
+        if (updates.status === 'completed') {
+          await checkAchievements()
+        }
       } else {
         console.error('Failed to update task:', response.statusText)
       }

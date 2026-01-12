@@ -18,7 +18,6 @@ import {
 import { useState, useEffect } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageToggle } from '@/components/LanguageToggle'
-import { getAchievements } from '@/lib/storage/achievements'
 
 interface Notification {
   id: string
@@ -115,21 +114,45 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Load recent unlocked achievements
-    const achievements = getAchievements()
-    const unlocked = achievements
-      .filter(a => a.unlocked)
-      .sort((a, b) => {
-        if (!a.unlockedAt) return 1
-        if (!b.unlockedAt) return -1
-        return b.unlockedAt.getTime() - a.unlockedAt.getTime()
-      })
-      .slice(0, 3)
-    setRecentAchievements(unlocked)
+    // Load achievements from API
+    const loadAchievements = async () => {
+      try {
+        const response = await fetch('/api/achievements')
+        if (response.ok) {
+          const data = await response.json()
+          const unlocked = data.achievements
+            .filter((a: any) => a.unlocked)
+            .sort((a: any, b: any) => {
+              if (!a.unlockedAt) return 1
+              if (!b.unlockedAt) return -1
+              return new Date(b.unlockedAt).getTime() - new Date(a.unlockedAt).getTime()
+            })
+            .slice(0, 3)
+          setRecentAchievements(unlocked)
+        }
+      } catch (error) {
+        console.error('Error loading achievements:', error)
+      }
+    }
+
+    // Load notifications from API
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications')
+        if (response.ok) {
+          const data = await response.json()
+          setNotifications(data.notifications || [])
+        }
+      } catch (error) {
+        console.error('Error loading notifications:', error)
+      }
+    }
 
     // Initial load
     loadUserData()
     loadUserStats()
+    loadAchievements()
+    loadNotifications()
   }, [])
 
   return (
@@ -205,8 +228,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         </h3>
                         {notifications.filter(n => !n.read).length > 0 && (
                           <button
-                            onClick={() => {
-                              setNotifications(notifications.map(n => ({ ...n, read: true })))
+                            onClick={async () => {
+                              try {
+                                await fetch('/api/notifications', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ markAllRead: true }),
+                                })
+                                setNotifications(notifications.map(n => ({ ...n, read: true })))
+                              } catch (error) {
+                                console.error('Error marking notifications as read:', error)
+                              }
                             }}
                             className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                           >
