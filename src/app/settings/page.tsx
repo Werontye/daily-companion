@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const handleToggle = (key: keyof typeof settings) => {
     setSettings(prev => ({
       ...prev,
-      [key]: !prev[key as string],
+      [key]: typeof prev[key] === 'boolean' ? !prev[key] : prev[key],
     }))
   }
 
