@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   CheckCircleIcon,
   BellIcon,
@@ -12,6 +13,13 @@ import {
 import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function HomePage() {
+  const router = useRouter()
+
+  const handleTryDemo = () => {
+    // Clear all user data before entering demo mode
+    localStorage.clear()
+    router.push('/dashboard')
+  }
   return (
     <div className="min-h-screen relative overflow-hidden bg-white dark:bg-neutral-900">
       {/* Animated Background */}
@@ -73,12 +81,12 @@ export default function HomePage() {
               >
                 🚀 Get started - it&apos;s free
               </Link>
-              <Link
-                href="/dashboard"
+              <button
+                onClick={handleTryDemo}
                 className="btn btn-ghost text-lg px-8 py-4 border-2 border-neutral-300 dark:border-neutral-600 w-full sm:w-auto"
               >
                 ✨ Try Live Demo
-              </Link>
+              </button>
             </div>
           </div>
 
