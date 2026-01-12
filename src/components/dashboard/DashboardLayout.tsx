@@ -38,6 +38,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [userStats, setUserStats] = useState({ totalTasks: 0, focusSessions: 0, currentStreak: 0 })
 
   const navigation = [
     { name: 'Today', href: '/dashboard', icon: CalendarIcon },
@@ -49,9 +50,33 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   ]
 
   useEffect(() => {
-    // Load user data from localStorage
-    const loadUserData = () => {
+    // Load user data from API
+    const loadUserData = async () => {
       try {
+        const response = await fetch('/api/auth')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            setUserName(data.user.displayName || 'User')
+            setUserInitial(data.user.displayName?.charAt(0).toUpperCase() || 'U')
+
+            // Store user data in localStorage for offline access
+            localStorage.setItem('user', JSON.stringify(data.user))
+          }
+        } else {
+          // Fallback to localStorage if API fails
+          const userDataStr = localStorage.getItem('user')
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr)
+            if (userData.displayName) {
+              setUserName(userData.displayName)
+              setUserInitial(userData.displayName.charAt(0).toUpperCase())
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+        // Fallback to localStorage
         const userDataStr = localStorage.getItem('user')
         if (userDataStr) {
           const userData = JSON.parse(userDataStr)
@@ -60,8 +85,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             setUserInitial(userData.displayName.charAt(0).toUpperCase())
           }
         }
+      }
+    }
+
+    // Load user statistics from API
+    const loadUserStats = async () => {
+      try {
+        const response = await fetch('/api/user/stats')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.stats) {
+            setUserStats({
+              totalTasks: data.stats.totalTasks || 0,
+              focusSessions: data.stats.focusSessions || 0,
+              currentStreak: data.stats.currentStreak || 0,
+            })
+          }
+        }
       } catch (error) {
-        console.error('Error loading user data:', error)
+        console.error('Error loading user stats:', error)
       }
     }
 
@@ -79,13 +121,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     // Initial load
     loadUserData()
-
-    // Listen for storage changes
-    window.addEventListener('storage', loadUserData)
-
-    return () => {
-      window.removeEventListener('storage', loadUserData)
-    }
+    loadUserStats()
   }, [])
 
   return (
@@ -311,15 +347,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
               <div className="grid grid-cols-3 gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-700">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">12</div>
+                  <div className="text-lg font-bold text-blue-600">{userStats.totalTasks}</div>
                   <div className="text-xs text-neutral-500 dark:text-neutral-400">Tasks</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-orange-600">8</div>
+                  <div className="text-lg font-bold text-orange-600">{userStats.focusSessions}</div>
                   <div className="text-xs text-neutral-500 dark:text-neutral-400">Focus</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">3🔥</div>
+                  <div className="text-lg font-bold text-green-600">{userStats.currentStreak}🔥</div>
                   <div className="text-xs text-neutral-500 dark:text-neutral-400">Streak</div>
                 </div>
               </div>
