@@ -1,22 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Toast } from '@/components/ui/toast/Toast'
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    bio: 'Productivity enthusiast and software developer. Love organizing my day!',
-    avatar: 'U',
-    joinDate: new Date('2026-01-01'),
+    name: '',
+    email: '',
+    bio: '',
+    avatar: '',
+    joinDate: new Date(),
   })
 
   const [editedProfile, setEditedProfile] = useState(profile)
+
+  // Fetch user session on mount
+  useEffect(() => {
+    const fetchUserSession = async () => {
+      try {
+        const response = await fetch('/api/auth')
+        if (response.ok) {
+          const data = await response.json()
+          const user = data.user
+          const userProfile = {
+            name: user.displayName || user.email.split('@')[0],
+            email: user.email,
+            bio: '',
+            avatar: (user.displayName || user.email)?.[0]?.toUpperCase() || 'U',
+            joinDate: new Date(user.createdAt || Date.now()),
+          }
+          setProfile(userProfile)
+          setEditedProfile(userProfile)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user session:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUserSession()
+  }, [])
 
   const handleSave = () => {
     if (!editedProfile.name.trim()) {
@@ -36,6 +65,18 @@ export default function ProfilePage() {
 
   const handleAvatarChange = (letter: string) => {
     setEditedProfile({ ...editedProfile, avatar: letter.toUpperCase() })
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto py-8">
+          <div className="flex items-center justify-center h-96">
+            <div className="loading-spinner"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
