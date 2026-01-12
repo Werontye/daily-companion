@@ -269,5 +269,6 @@ export interface InputProps {
   error?: string
   required?: boolean
   disabled?: boolean
+  autoFocus?: boolean
   className?: string
 }

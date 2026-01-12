@@ -10,6 +10,7 @@ export function Input({
   error,
   required = false,
   disabled = false,
+  autoFocus = false,
   className = '',
 }: InputProps) {
   const id = React.useId()
@@ -30,6 +31,7 @@ export function Input({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        autoFocus={autoFocus}
         aria-invalid={!!error}
         aria-describedby={error ? `${id}-error` : undefined}
         className={`input ${error ? 'border-red-500 focus:ring-red-500' : ''}`}
