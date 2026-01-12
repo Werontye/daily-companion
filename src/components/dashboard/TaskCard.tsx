@@ -108,7 +108,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit }: TaskCardPro
               </div>
             )}
 
-            {task.pomodoroSessions.length > 0 && (
+            {task.pomodoroSessions && task.pomodoroSessions.length > 0 && (
               <div className="flex items-center gap-1">
                 <PlayIcon className="h-4 w-4" />
                 <span>{task.pomodoroSessions.length} sessions</span>

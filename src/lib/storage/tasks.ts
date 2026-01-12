@@ -16,13 +16,13 @@ export function getTasks(): Task[] {
       ...task,
       startTime: task.startTime ? new Date(task.startTime) : undefined,
       endTime: task.endTime ? new Date(task.endTime) : undefined,
-      createdAt: new Date(task.createdAt),
-      updatedAt: new Date(task.updatedAt),
-      pomodoroSessions: task.pomodoroSessions.map((session: any) => ({
+      createdAt: task.createdAt ? new Date(task.createdAt) : undefined,
+      updatedAt: task.updatedAt ? new Date(task.updatedAt) : undefined,
+      pomodoroSessions: task.pomodoroSessions?.map((session: any) => ({
         ...session,
         startTime: new Date(session.startTime),
         endTime: session.endTime ? new Date(session.endTime) : undefined,
-      })),
+      })) || [],
     }))
   } catch (error) {
     console.error('Error loading tasks from localStorage:', error)
