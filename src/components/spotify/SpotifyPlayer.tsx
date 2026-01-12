@@ -50,8 +50,6 @@ export function SpotifyPlayer() {
 
   const handlePlayPlaylist = (playlist: Playlist) => {
     setSelectedPlaylist(playlist)
-    // In real app, would use Spotify Web Playback SDK
-    window.open(`https://open.spotify.com/playlist/${playlist.id}`, '_blank')
   }
 
   if (!isExpanded) {
@@ -69,7 +67,7 @@ export function SpotifyPlayer() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 card shadow-2xl z-50 animate-slide-up">
+    <div className="fixed bottom-6 right-6 w-96 card shadow-2xl z-50 animate-slide-up max-h-[80vh] overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <svg className="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
@@ -80,7 +78,10 @@ export function SpotifyPlayer() {
           </h3>
         </div>
         <button
-          onClick={() => setIsExpanded(false)}
+          onClick={() => {
+            setIsExpanded(false)
+            setSelectedPlaylist(null)
+          }}
           className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
         >
           ✕
@@ -105,44 +106,69 @@ export function SpotifyPlayer() {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 mb-4">
-            <p className="text-xs text-neutral-700 dark:text-neutral-300">
-              💡 Playlists will open in Spotify web player. Make sure you're logged into Spotify!
-            </p>
-          </div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-            Choose a playlist to enhance your focus:
-          </p>
-          {focusPlaylists.map(playlist => (
-            <button
-              key={playlist.id}
-              onClick={() => handlePlayPlaylist(playlist)}
-              className="w-full p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all text-left group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">{playlist.image}</div>
-                <div className="flex-1">
-                  <div className="font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-green-600">
-                    {playlist.name}
-                  </div>
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {playlist.description}
-                  </div>
-                </div>
-                <PlayIcon className="h-5 w-5 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </button>
-          ))}
+          {selectedPlaylist ? (
+            <div className="space-y-3">
+              <button
+                onClick={() => setSelectedPlaylist(null)}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-2"
+              >
+                ← Back to playlists
+              </button>
 
-          {selectedPlaylist && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-                <span className="text-neutral-700 dark:text-neutral-300">
-                  Now playing: {selectedPlaylist.name}
-                </span>
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 text-sm mb-3">
+                  <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
+                  <span className="text-neutral-700 dark:text-neutral-300 font-medium">
+                    {selectedPlaylist.name}
+                  </span>
+                </div>
+              </div>
+
+              {/* Embedded Spotify Player */}
+              <div className="rounded-lg overflow-hidden">
+                <iframe
+                  src={`https://open.spotify.com/embed/playlist/${selectedPlaylist.id}?utm_source=generator&theme=0`}
+                  width="100%"
+                  height="352"
+                  frameBorder="0"
+                  allowFullScreen
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                  loading="lazy"
+                  className="rounded-lg"
+                />
               </div>
             </div>
+          ) : (
+            <>
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 mb-4">
+                <p className="text-xs text-neutral-700 dark:text-neutral-300">
+                  💡 Select a playlist to play it directly in the app!
+                </p>
+              </div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                Choose a playlist to enhance your focus:
+              </p>
+              {focusPlaylists.map(playlist => (
+                <button
+                  key={playlist.id}
+                  onClick={() => handlePlayPlaylist(playlist)}
+                  className="w-full p-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">{playlist.image}</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-green-600">
+                        {playlist.name}
+                      </div>
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                        {playlist.description}
+                      </div>
+                    </div>
+                    <PlayIcon className="h-5 w-5 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </button>
+              ))}
+            </>
           )}
 
           <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
