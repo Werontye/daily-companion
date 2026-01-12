@@ -34,57 +34,8 @@ interface SharedPlan {
   createdAt: Date
 }
 
-const demoPlans: SharedPlan[] = [
-  {
-    id: '1',
-    name: 'Team Sprint Planning',
-    description: 'Q1 2026 development sprint tasks',
-    members: [
-      { id: '1', name: 'You', avatar: '👤', role: 'owner' },
-      { id: '2', name: 'Alice Chen', avatar: '👩', role: 'editor' },
-      { id: '3', name: 'Bob Smith', avatar: '👨', role: 'editor' },
-    ],
-    tasks: [
-      { id: 't1', title: 'Design new dashboard UI', assignedTo: '2', status: 'completed' },
-      { id: 't2', title: 'Implement API endpoints', assignedTo: '3', status: 'pending' },
-      { id: 't3', title: 'Write unit tests', assignedTo: '1', status: 'pending' },
-    ],
-    messages: [
-      {
-        id: 'm1',
-        userId: '2',
-        userName: 'Alice Chen',
-        avatar: '👩',
-        content: 'I finished the dashboard design! Check it out in Figma.',
-        timestamp: new Date('2026-01-11T10:30:00'),
-      },
-      {
-        id: 'm2',
-        userId: '1',
-        userName: 'You',
-        avatar: '👤',
-        content: 'Looks great! I\'ll start on the tests today.',
-        timestamp: new Date('2026-01-11T11:00:00'),
-      },
-    ],
-    createdAt: new Date('2026-01-08'),
-  },
-  {
-    id: '2',
-    name: 'Home Renovation',
-    description: 'Living room makeover project',
-    members: [
-      { id: '1', name: 'You', avatar: '👤', role: 'owner' },
-      { id: '4', name: 'Sarah Johnson', avatar: '👩‍🦰', role: 'editor' },
-    ],
-    tasks: [
-      { id: 't4', title: 'Choose paint colors', assignedTo: '4', status: 'completed' },
-      { id: 't5', title: 'Order furniture', assignedTo: '1', status: 'pending' },
-    ],
-    messages: [],
-    createdAt: new Date('2026-01-05'),
-  },
-]
+// Empty by default for new users
+const demoPlans: SharedPlan[] = []
 
 export default function SharedPlansPage() {
   const [plans, setPlans] = useState<SharedPlan[]>(demoPlans)
