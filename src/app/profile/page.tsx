@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Toast } from '@/components/ui/toast/Toast'
 import { useRouter } from 'next/navigation'
+import { getTasks } from '@/lib/storage/tasks'
+import { getTemplates } from '@/lib/storage/templates'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -22,6 +24,13 @@ export default function ProfilePage() {
     avatarType: 'initial' as 'initial' | 'photo',
     avatarUrl: '',
     joinDate: new Date(),
+  })
+
+  const [statistics, setStatistics] = useState({
+    tasksCompleted: 0,
+    dayStreak: 0,
+    templatesCreated: 0,
+    sharedPlans: 0,
   })
 
   const [editedProfile, setEditedProfile] = useState(profile)
@@ -55,6 +64,46 @@ export default function ProfilePage() {
     }
 
     fetchUserSession()
+  }, [])
+
+  // Calculate statistics from localStorage
+  useEffect(() => {
+    const calculateStatistics = () => {
+      const tasks = getTasks()
+      const templates = getTemplates()
+
+      const completedTasks = tasks.filter(t => t.status === 'completed').length
+
+      // Calculate streak (simplified - just showing days with completed tasks in last 30 days)
+      const today = new Date()
+      const last30Days = Array.from({ length: 30 }, (_, i) => {
+        const date = new Date(today)
+        date.setDate(date.getDate() - i)
+        return date.toDateString()
+      })
+
+      let streak = 0
+      for (const dateStr of last30Days) {
+        const hasCompletedTask = tasks.some(t => {
+          if (t.status !== 'completed' || !t.updatedAt) return false
+          return new Date(t.updatedAt).toDateString() === dateStr
+        })
+        if (hasCompletedTask) {
+          streak++
+        } else {
+          break
+        }
+      }
+
+      setStatistics({
+        tasksCompleted: completedTasks,
+        dayStreak: streak,
+        templatesCreated: templates.length,
+        sharedPlans: 0, // Shared plans aren't implemented yet
+      })
+    }
+
+    calculateStatistics()
   }, [])
 
   const handleSave = () => {
@@ -353,7 +402,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                    247
+                    {statistics.tasksCompleted}
                   </div>
                   <div className="text-sm text-neutral-600 dark:text-neutral-400">
                     Tasks Completed
@@ -362,7 +411,8 @@ export default function ProfilePage() {
 
                 <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                   <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1">
-                    12
+                    {statistics.dayStreak}
+                    {statistics.dayStreak > 0 && '🔥'}
                   </div>
                   <div className="text-sm text-neutral-600 dark:text-neutral-400">
                     Day Streak
@@ -371,7 +421,7 @@ export default function ProfilePage() {
 
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                   <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
-                    18
+                    {statistics.templatesCreated}
                   </div>
                   <div className="text-sm text-neutral-600 dark:text-neutral-400">
                     Templates Created
@@ -380,7 +430,7 @@ export default function ProfilePage() {
 
                 <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                   <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-1">
-                    5
+                    {statistics.sharedPlans}
                   </div>
                   <div className="text-sm text-neutral-600 dark:text-neutral-400">
                     Shared Plans

@@ -42,7 +42,14 @@ export default function DashboardPage() {
       ownerId: 'demo-user', // Will be replaced with real auth later
       title: newTask.title || '',
       description: newTask.description,
-      startTime: newTask.startTime,
+      // If no start time provided, set it to the selected date at current time
+      startTime: newTask.startTime || new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        new Date().getHours(),
+        new Date().getMinutes()
+      ),
       endTime: newTask.endTime,
       duration: newTask.duration,
       priority: newTask.priority || 'medium',
