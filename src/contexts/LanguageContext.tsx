@@ -24,25 +24,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [t, setT] = useState<Translations>(en)
 
   useEffect(() => {
-    // Load language from localStorage
-    const stored = localStorage.getItem('locale') as Locale
-    if (stored && (stored === 'en' || stored === 'ru')) {
-      setLocaleState(stored)
-      setT(translations[stored])
-    } else {
-      // Detect browser language
-      const browserLang = navigator.language.split('-')[0]
-      if (browserLang === 'ru') {
-        setLocaleState('ru')
-        setT(ru)
-      }
-    }
+    // Always use English - language selection removed
+    setLocaleState('en')
+    setT(en)
+    localStorage.setItem('locale', 'en')
   }, [])
 
   const setLocale = (newLocale: Locale) => {
-    setLocaleState(newLocale)
-    setT(translations[newLocale])
-    localStorage.setItem('locale', newLocale)
+    // Language selection removed - always use English
+    setLocaleState('en')
+    setT(en)
+    localStorage.setItem('locale', 'en')
   }
 
   return (
