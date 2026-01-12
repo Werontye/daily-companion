@@ -35,6 +35,8 @@ export default function ProfilePage() {
             email: user.email,
             bio: '',
             avatar: (user.displayName || user.email)?.[0]?.toUpperCase() || 'U',
+            avatarType: 'initial' as 'initial' | 'photo',
+            avatarUrl: '',
             joinDate: new Date(user.createdAt || Date.now()),
           }
           setProfile(userProfile)
