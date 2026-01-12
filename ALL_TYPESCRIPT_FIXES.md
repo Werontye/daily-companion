@@ -9,6 +9,7 @@
 | #3 | Template type: `name` → `title` | `src/app/api/templates/route.ts` | ✅ Исправлен |
 | #4 | User type в login | `src/app/api/auth/login/route.ts` | ✅ Исправлен |
 | #5 | Type indexing error | `src/app/settings/page.tsx` | ✅ Исправлен |
+| #6 | Missing template fields | `src/app/templates/page.tsx` | ✅ Исправлен |
 
 ---
 
@@ -211,6 +212,50 @@ Fix: TypeScript error in settings page - fix type indexing
 
 ---
 
+### 6. `src/app/templates/page.tsx` (ИСПРАВЛЕН)
+
+**Проблема:**
+```typescript
+// ❌ Было:
+const demoTemplates: TemplateItem[] = [
+  {
+    id: '1',
+    name: 'Morning Routine',
+    // ...
+    usageCount: 24,
+    // ❌ Отсутствуют isPublic и ownerId
+  },
+]
+```
+
+**Ошибка:**
+```
+Type error: Type is missing the following properties from type 'TemplateItem':
+isPublic, ownerId
+```
+
+**Решение:**
+```typescript
+// ✅ Стало:
+const demoTemplates: TemplateItem[] = [
+  {
+    id: '1',
+    name: 'Morning Routine',
+    // ...
+    usageCount: 24,
+    isPublic: true,           // ✅ Добавлено
+    ownerId: 'demo-user',     // ✅ Добавлено
+  },
+]
+```
+
+**Коммит:**
+```
+Fix: Add missing fields to template demo data
+```
+
+---
+
 ## 📝 Список всех изменений полей:
 
 ### User type изменения:
@@ -247,6 +292,7 @@ Fix: TypeScript error in settings page - fix type indexing
 fc48e79 - Fix: TypeScript errors in templates route
 ca9d13c - Fix: TypeScript errors in login route
 bd6c844 - Fix: TypeScript error in settings page
+ff0ccad - Fix: Add missing fields to template demo data
 ```
 
 ✅ **Railway автоматически начнет новый build**
