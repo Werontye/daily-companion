@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
-import { PageTransition } from '@/components/PageTransition'
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] })
 
@@ -41,9 +40,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <LanguageProvider>
           <ThemeProvider>
-            <PageTransition>
-              {children}
-            </PageTransition>
+            {children}
           </ThemeProvider>
         </LanguageProvider>
       </body>
