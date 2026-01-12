@@ -6,6 +6,7 @@ import { Toast } from '@/components/ui/toast/Toast'
 import { useRouter } from 'next/navigation'
 import { getTasks } from '@/lib/storage/tasks'
 import { getTemplates } from '@/lib/storage/templates'
+import { SearchIcon, UserIcon, XIcon } from '@/components/icons'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -35,6 +36,13 @@ export default function ProfilePage() {
 
   const [editedProfile, setEditedProfile] = useState(profile)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+
+  // Friends state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [friends, setFriends] = useState<any[]>([])
+  const [friendRequests, setFriendRequests] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
 
   // Fetch user session on mount
   useEffect(() => {
@@ -206,6 +214,71 @@ export default function ProfilePage() {
       setIsDeleting(false)
     }
   }
+
+  // Friends functionality
+  const handleSearchUsers = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    // Simulate API call - in real app this would search actual users
+    setTimeout(() => {
+      // Mock search results
+      const mockResults = [
+        {
+          id: '2',
+          name: 'John Doe',
+          email: 'john@example.com',
+          avatar: 'J',
+          isFriend: false,
+          requestPending: false,
+        },
+        {
+          id: '3',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          avatar: 'J',
+          isFriend: false,
+          requestPending: false,
+        },
+      ].filter(user =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      setSearchResults(mockResults)
+      setIsSearching(false)
+    }, 500)
+  }
+
+  const handleSendFriendRequest = (userId: string) => {
+    setSearchResults(searchResults.map(user =>
+      user.id === userId ? { ...user, requestPending: true } : user
+    ))
+    setToast({ message: 'Friend request sent!', type: 'success' })
+  }
+
+  const handleAcceptFriendRequest = (userId: string) => {
+    const request = friendRequests.find(r => r.id === userId)
+    if (request) {
+      setFriends([...friends, { ...request, isFriend: true }])
+      setFriendRequests(friendRequests.filter(r => r.id !== userId))
+      setToast({ message: 'Friend request accepted!', type: 'success' })
+    }
+  }
+
+  const handleRemoveFriend = (userId: string) => {
+    setFriends(friends.filter(f => f.id !== userId))
+    setToast({ message: 'Friend removed', type: 'success' })
+  }
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handleSearchUsers()
+    }, 300)
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
 
   if (isLoading) {
     return (
@@ -452,6 +525,162 @@ export default function ProfilePage() {
                     Shared Plans
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Friends */}
+            <div className="card">
+              <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
+                Friends
+              </h3>
+
+              {/* Search Bar */}
+              <div className="mb-6">
+                <div className="relative">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search users by name or email..."
+                    className="input pl-10"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="loading-spinner w-5 h-5"></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Search Results */}
+                {searchResults.length > 0 && (
+                  <div className="mt-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 max-h-60 overflow-y-auto">
+                    {searchResults.map(user => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-3 border-b border-neutral-200 dark:border-neutral-700 last:border-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                            {user.avatar}
+                          </div>
+                          <div>
+                            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-neutral-500">
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                        {user.requestPending ? (
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400 px-3 py-1 bg-neutral-200 dark:bg-neutral-700 rounded-full">
+                            Request Sent
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleSendFriendRequest(user.id)}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Add Friend
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchQuery && !isSearching && searchResults.length === 0 && (
+                  <div className="mt-3 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg text-center text-neutral-500 dark:text-neutral-400 text-sm">
+                    No users found matching "{searchQuery}"
+                  </div>
+                )}
+              </div>
+
+              {/* Friend Requests */}
+              {friendRequests.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+                    Friend Requests
+                  </h4>
+                  <div className="space-y-2">
+                    {friendRequests.map(request => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                            {request.avatar}
+                          </div>
+                          <div>
+                            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                              {request.name}
+                            </div>
+                            <div className="text-xs text-neutral-500">
+                              {request.email}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAcceptFriendRequest(request.id)}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => setFriendRequests(friendRequests.filter(r => r.id !== request.id))}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Friends List */}
+              <div>
+                <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+                  Your Friends ({friends.length})
+                </h4>
+                {friends.length === 0 ? (
+                  <div className="text-center py-8 text-neutral-500 dark:text-neutral-400 text-sm">
+                    No friends yet. Search for users above to add friends!
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {friends.map(friend => (
+                      <div
+                        key={friend.id}
+                        className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                            {friend.avatar}
+                          </div>
+                          <div>
+                            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                              {friend.name}
+                            </div>
+                            <div className="text-xs text-neutral-500">
+                              {friend.email}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveFriend(friend.id)}
+                          className="btn btn-ghost btn-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
