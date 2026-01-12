@@ -55,10 +55,10 @@ export default function ProfilePage() {
           const userProfile = {
             name: user.displayName || user.email.split('@')[0],
             email: user.email,
-            bio: '',
-            avatar: (user.displayName || user.email)?.[0]?.toUpperCase() || 'U',
-            avatarType: 'initial' as 'initial' | 'photo',
-            avatarUrl: '',
+            bio: user.bio || '',
+            avatar: user.avatar || (user.displayName || user.email)?.[0]?.toUpperCase() || 'U',
+            avatarType: (user.avatarType || 'initial') as 'initial' | 'photo',
+            avatarUrl: user.avatarType === 'photo' ? user.avatar : '',
             joinDate: new Date(user.createdAt || Date.now()),
           }
           setProfile(userProfile)
@@ -114,31 +114,58 @@ export default function ProfilePage() {
     calculateStatistics()
   }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editedProfile.name.trim()) {
       setToast({ message: 'Name cannot be empty', type: 'error' })
       return
     }
 
-    setProfile(editedProfile)
-    setIsEditing(false)
-
-    // Update localStorage so mini-profile reflects changes
     try {
-      const userDataStr = localStorage.getItem('user')
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr)
-        userData.displayName = editedProfile.name
-        localStorage.setItem('user', JSON.stringify(userData))
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName: editedProfile.name,
+          bio: editedProfile.bio,
+          avatar: editedProfile.avatarUrl || editedProfile.avatar,
+          avatarType: editedProfile.avatarType,
+        }),
+      })
 
-        // Trigger a storage event to update other components
-        window.dispatchEvent(new Event('storage'))
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(editedProfile)
+        setIsEditing(false)
+
+        // Update localStorage so mini-profile reflects changes
+        try {
+          const userDataStr = localStorage.getItem('user')
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr)
+            userData.displayName = editedProfile.name
+            userData.bio = editedProfile.bio
+            userData.avatar = editedProfile.avatarUrl || editedProfile.avatar
+            userData.avatarType = editedProfile.avatarType
+            localStorage.setItem('user', JSON.stringify(userData))
+
+            // Trigger a storage event to update other components
+            window.dispatchEvent(new Event('storage'))
+          }
+        } catch (error) {
+          console.error('Error updating user in localStorage:', error)
+        }
+
+        setToast({ message: 'Profile updated successfully!', type: 'success' })
+      } else {
+        const errorData = await response.json()
+        setToast({ message: errorData.error || 'Failed to update profile', type: 'error' })
       }
     } catch (error) {
-      console.error('Error updating user in localStorage:', error)
+      console.error('Error saving profile:', error)
+      setToast({ message: 'Failed to update profile. Please try again.', type: 'error' })
     }
-
-    setToast({ message: 'Profile updated successfully!', type: 'success' })
   }
 
   const handleCancel = () => {

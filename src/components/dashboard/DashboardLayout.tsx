@@ -35,6 +35,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [recentAchievements, setRecentAchievements] = useState<any[]>([])
   const [userName, setUserName] = useState('User')
   const [userInitial, setUserInitial] = useState('U')
+  const [userAvatar, setUserAvatar] = useState<string | null>(null)
+  const [userAvatarType, setUserAvatarType] = useState<'initial' | 'photo'>('initial')
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
@@ -58,7 +60,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           const data = await response.json()
           if (data.user) {
             setUserName(data.user.displayName || 'User')
-            setUserInitial(data.user.displayName?.charAt(0).toUpperCase() || 'U')
+            setUserInitial(data.user.avatar || data.user.displayName?.charAt(0).toUpperCase() || 'U')
+            setUserAvatar(data.user.avatar)
+            setUserAvatarType(data.user.avatarType || 'initial')
 
             // Store user data in localStorage for offline access
             localStorage.setItem('user', JSON.stringify(data.user))
@@ -70,7 +74,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             const userData = JSON.parse(userDataStr)
             if (userData.displayName) {
               setUserName(userData.displayName)
-              setUserInitial(userData.displayName.charAt(0).toUpperCase())
+              setUserInitial(userData.avatar || userData.displayName.charAt(0).toUpperCase())
+              setUserAvatar(userData.avatar)
+              setUserAvatarType(userData.avatarType || 'initial')
             }
           }
         }
@@ -82,7 +88,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           const userData = JSON.parse(userDataStr)
           if (userData.displayName) {
             setUserName(userData.displayName)
-            setUserInitial(userData.displayName.charAt(0).toUpperCase())
+            setUserInitial(userData.avatar || userData.displayName.charAt(0).toUpperCase())
+            setUserAvatar(userData.avatar)
+            setUserAvatarType(userData.avatarType || 'initial')
           }
         }
       }
@@ -261,9 +269,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                 aria-label="Profile"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                  {userInitial}
-                </div>
+                {userAvatarType === 'photo' && userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-blue-600"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                    {userInitial}
+                  </div>
+                )}
                 <span className="hidden md:inline text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   Profile
                 </span>
@@ -331,9 +347,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="card">
               <Link href="/profile" className="block hover:opacity-80 transition-opacity">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
-                    {userInitial}
-                  </div>
+                  {userAvatarType === 'photo' && userAvatar ? (
+                    <img
+                      src={userAvatar}
+                      alt="Profile"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-blue-600"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
+                      {userInitial}
+                    </div>
+                  )}
                   <div className="flex-1">
                     <div className="font-semibold text-neutral-900 dark:text-neutral-100">
                       {userName}

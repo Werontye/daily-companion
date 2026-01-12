@@ -134,6 +134,7 @@ export async function GET(request: NextRequest) {
         avatar: user.avatar,
         avatarType: user.avatarType,
         bio: user.bio,
+        createdAt: user.createdAt,
       },
     })
   } catch (error) {

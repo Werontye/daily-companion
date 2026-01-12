@@ -7,76 +7,114 @@ import { TaskList } from '@/components/dashboard/TaskList'
 import { Timeline } from '@/components/dashboard/Timeline'
 import { QuickAddModal } from '@/components/dashboard/QuickAddModal'
 import { Task } from '@/types'
-import { getTasks, saveTasks } from '@/lib/storage/tasks'
-import { generateDemoTasks } from '@/lib/storage/demoData'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { isDemoMode } from '@/lib/demoMode'
 
 export default function DashboardPage() {
   const { t } = useLanguage()
   const [tasks, setTasks] = useState<Task[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load tasks from API
+  const loadTasks = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/tasks')
+      if (response.ok) {
+        const data = await response.json()
+        setTasks(data.tasks || [])
+      } else {
+        console.error('Failed to load tasks:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error loading tasks:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Load tasks from localStorage on mount
-    let loadedTasks = getTasks()
-
-    // If no tasks exist and in demo mode, load demo data
-    if (loadedTasks.length === 0 && isDemoMode()) {
-      loadedTasks = generateDemoTasks()
-      saveTasks(loadedTasks)
-    }
-
-    setTasks(loadedTasks)
+    loadTasks()
   }, [])
 
-  useEffect(() => {
-    // Save tasks to localStorage whenever they change
-    saveTasks(tasks)
-  }, [tasks])
+  const handleAddTask = async (newTask: Partial<Task>) => {
+    try {
+      const taskData = {
+        title: newTask.title || '',
+        description: newTask.description,
+        startTime: newTask.startTime || new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          new Date().getHours(),
+          new Date().getMinutes()
+        ),
+        endTime: newTask.endTime,
+        duration: newTask.duration,
+        priority: newTask.priority || 'medium',
+        tags: newTask.tags || [],
+      }
 
-  const handleAddTask = (newTask: Partial<Task>) => {
-    const task: Task = {
-      id: crypto.randomUUID(),
-      ownerId: 'demo-user', // Will be replaced with real auth later
-      title: newTask.title || '',
-      description: newTask.description,
-      // If no start time provided, set it to the selected date at current time
-      startTime: newTask.startTime || new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        new Date().getHours(),
-        new Date().getMinutes()
-      ),
-      endTime: newTask.endTime,
-      duration: newTask.duration,
-      priority: newTask.priority || 'medium',
-      status: 'pending',
-      repeatRule: newTask.repeatRule,
-      location: newTask.location,
-      stepTrigger: newTask.stepTrigger,
-      assignees: [],
-      tags: newTask.tags || [],
-      pomodoroSessions: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Reload tasks to get updated list
+        await loadTasks()
+        setIsAddModalOpen(false)
+      } else {
+        console.error('Failed to create task:', response.statusText)
+        alert('Failed to create task. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
+      alert('Failed to create task. Please try again.')
     }
-    setTasks([...tasks, task])
-    setIsAddModalOpen(false)
   }
 
-  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
-    setTasks(tasks.map(task =>
-      task.id === taskId
-        ? { ...task, ...updates, updatedAt: new Date() }
-        : task
-    ))
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: taskId, ...updates }),
+      })
+
+      if (response.ok) {
+        // Reload tasks to get updated list
+        await loadTasks()
+      } else {
+        console.error('Failed to update task:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
   }
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId))
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/tasks?id=${taskId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Reload tasks to get updated list
+        await loadTasks()
+      } else {
+        console.error('Failed to delete task:', response.statusText)
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+    }
   }
 
   const todayTasks = tasks.filter(task => {
