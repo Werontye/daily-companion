@@ -3,11 +3,16 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Toast } from '@/components/ui/toast/Toast'
+import { useRouter } from 'next/navigation'
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [profile, setProfile] = useState({
     name: '',
@@ -109,6 +114,32 @@ export default function ProfilePage() {
       avatarType: 'initial',
       avatarUrl: '',
     })
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      return
+    }
+
+    setIsDeleting(true)
+
+    try {
+      const response = await fetch('/api/user', {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        localStorage.clear()
+        router.push('/')
+      } else {
+        setToast({ message: 'Failed to delete account. Please try again.', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      setToast({ message: 'An error occurred. Please try again.', type: 'error' })
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   if (isLoading) {
@@ -428,7 +459,10 @@ export default function ProfilePage() {
                       Permanently delete your account and all data
                     </div>
                   </div>
-                  <button className="btn bg-red-600 hover:bg-red-700 text-white border-0">
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="btn bg-red-600 hover:bg-red-700 text-white border-0"
+                  >
                     Delete
                   </button>
                 </div>
@@ -445,6 +479,57 @@ export default function ProfilePage() {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+                Delete Account
+              </h3>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                This action cannot be undone. All your data will be permanently deleted.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="label mb-2">
+                Type <span className="font-bold text-red-600">DELETE</span> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="input"
+                placeholder="Type DELETE"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText('')
+                }}
+                className="btn btn-secondary flex-1"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                className="btn bg-red-600 hover:bg-red-700 text-white flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Forever'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   )
