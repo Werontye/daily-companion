@@ -10,6 +10,7 @@
 | #4 | User type в login | `src/app/api/auth/login/route.ts` | ✅ Исправлен |
 | #5 | Type indexing error | `src/app/settings/page.tsx` | ✅ Исправлен |
 | #6 | Missing template fields | `src/app/templates/page.tsx` | ✅ Исправлен |
+| #7 | Missing autoFocus prop | `src/components/ui/Input.tsx` | ✅ Исправлен |
 
 ---
 
