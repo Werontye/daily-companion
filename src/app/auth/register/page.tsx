@@ -47,6 +47,11 @@ export default function RegisterPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
+        // Store user data in localStorage
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user))
+        }
         router.push('/dashboard')
       } else {
         const data = await response.json()

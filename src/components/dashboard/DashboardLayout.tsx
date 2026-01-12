@@ -23,6 +23,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [recentAchievements, setRecentAchievements] = useState<any[]>([])
+  const [userName, setUserName] = useState('User')
+  const [userInitial, setUserInitial] = useState('U')
 
   const navigation = [
     { name: 'Today', href: '/dashboard', icon: CalendarIcon },
@@ -45,6 +47,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       })
       .slice(0, 3)
     setRecentAchievements(unlocked)
+
+    // Load user data from localStorage
+    try {
+      const userDataStr = localStorage.getItem('user')
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr)
+        if (userData.displayName) {
+          setUserName(userData.displayName)
+          setUserInitial(userData.displayName.charAt(0).toUpperCase())
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error)
+    }
   }, [])
 
   return (
@@ -104,7 +120,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 aria-label="Profile"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                  U
+                  {userInitial}
                 </div>
                 <span className="hidden md:inline text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   Profile
@@ -174,11 +190,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Link href="/profile" className="block hover:opacity-80 transition-opacity">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
-                    U
+                    {userInitial}
                   </div>
                   <div className="flex-1">
                     <div className="font-semibold text-neutral-900 dark:text-neutral-100">
-                      User
+                      {userName}
                     </div>
                     <div className="text-xs text-neutral-500 dark:text-neutral-400">
                       View Profile →
