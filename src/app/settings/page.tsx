@@ -3,12 +3,10 @@
 import { useState } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useLanguage } from '@/contexts/LanguageContext'
 import { useRouter } from 'next/navigation'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
-  const { locale, setLocale } = useLanguage()
   const router = useRouter()
 
   const [settings, setSettings] = useState({
@@ -109,32 +107,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Language */}
-              <div>
-                <label className="label mb-2">Language</label>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setLocale('en')}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
-                      locale === 'en'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-                    }`}
-                  >
-                    🇬🇧 English
-                  </button>
-                  <button
-                    onClick={() => setLocale('ru')}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
-                      locale === 'ru'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-                    }`}
-                  >
-                    🇷🇺 Русский
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 

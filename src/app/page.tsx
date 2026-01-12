@@ -10,7 +10,6 @@ import {
   UserGroupIcon
 } from '@/components/icons'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { LanguageToggle } from '@/components/LanguageToggle'
 
 export default function HomePage() {
   return (
@@ -35,7 +34,6 @@ export default function HomePage() {
               </span>
             </Link>
             <div className="flex items-center gap-3">
-              <LanguageToggle />
               <ThemeToggle />
               <Link
                 href="/auth/login"
