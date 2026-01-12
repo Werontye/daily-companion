@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { PlusIcon, ClockIcon, CheckCircleIcon, XIcon } from '@/components/icons'
 import { Toast } from '@/components/ui/toast/Toast'
+import { getTemplates, saveTemplates } from '@/lib/storage/templates'
 
 interface TemplateItem {
   id: string
@@ -103,7 +104,7 @@ const colorClasses = {
 }
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useState<TemplateItem[]>(demoTemplates)
+  const [templates, setTemplates] = useState<TemplateItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -116,6 +117,26 @@ export default function TemplatesPage() {
     isPublic: false,
     tasks: [{ title: '', duration: 15, priority: 'medium' as const }]
   })
+
+  // Load templates from localStorage on mount
+  useEffect(() => {
+    let loadedTemplates = getTemplates()
+
+    // If no templates exist, load demo data
+    if (loadedTemplates.length === 0) {
+      loadedTemplates = demoTemplates
+      saveTemplates(loadedTemplates)
+    }
+
+    setTemplates(loadedTemplates)
+  }, [])
+
+  // Save templates to localStorage whenever they change
+  useEffect(() => {
+    if (templates.length > 0) {
+      saveTemplates(templates)
+    }
+  }, [templates])
 
   const categories = ['All', ...Array.from(new Set(templates.map(t => t.category)))]
 
