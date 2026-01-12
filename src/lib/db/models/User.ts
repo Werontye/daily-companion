@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from 'mongoose'
+import mongoose, { Document, Model, Schema, CallbackError } from 'mongoose'
 import bcrypt from 'bcryptjs'
 
 export interface IUser extends Document {
@@ -77,20 +77,15 @@ const userSchema = new Schema<IUser>(
 userSchema.index({ provider: 1, providerId: 1 })
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    return next()
+    return
   }
 
-  try {
-    // Only hash if password exists (OAuth users won't have passwords)
-    if (this.password) {
-      const salt = await bcrypt.genSalt(10)
-      this.password = await bcrypt.hash(this.password, salt)
-    }
-    next()
-  } catch (error: any) {
-    next(error)
+  // Only hash if password exists (OAuth users won't have passwords)
+  if (this.password) {
+    const salt = await bcrypt.genSalt(10)
+    this.password = await bcrypt.hash(this.password, salt)
   }
 })
 

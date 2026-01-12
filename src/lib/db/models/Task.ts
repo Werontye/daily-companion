@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema, Types } from 'mongoose'
+import mongoose, { Document, Model, Schema, Types, CallbackError } from 'mongoose'
 
 export interface ITask extends Document {
   userId: Types.ObjectId
@@ -73,11 +73,10 @@ taskSchema.index({ userId: 1, status: 1 })
 taskSchema.index({ userId: 1, createdAt: -1 })
 
 // Automatically set completedAt when status changes to completed
-taskSchema.pre('save', function (next) {
+taskSchema.pre('save', function () {
   if (this.isModified('status') && this.status === 'completed' && !this.completedAt) {
     this.completedAt = new Date()
   }
-  next()
 })
 
 const Task: Model<ITask> =

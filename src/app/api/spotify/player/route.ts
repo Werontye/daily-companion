@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const track = playback.body.item as SpotifyApi.TrackObjectFull
+    const track = playback.body.item as any
 
     return NextResponse.json({
       isPlaying: playback.body.is_playing,
       track: {
         id: track.id,
         name: track.name,
-        artists: track.artists.map(a => a.name).join(', '),
+        artists: track.artists.map((a: any) => a.name).join(', '),
         album: track.album.name,
         albumArt: track.album.images[0]?.url,
         duration: track.duration_ms,
