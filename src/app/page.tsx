@@ -16,10 +16,12 @@ export default function HomePage() {
   return (
     <div className="min-h-screen relative overflow-hidden bg-white dark:bg-neutral-900">
       {/* Animated Background */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/30 dark:bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-40 right-20 w-96 h-96 bg-purple-500/30 dark:bg-purple-400/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-pink-500/30 dark:bg-pink-400/20 rounded-full blur-3xl animate-pulse delay-2000" />
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/30 dark:bg-blue-400/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-40 right-20 w-96 h-96 bg-purple-500/30 dark:bg-purple-400/20 rounded-full blur-3xl animate-float-reverse" />
+        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-pink-500/30 dark:bg-pink-400/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '5s' }} />
+        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-orange-500/20 dark:bg-orange-400/10 rounded-full blur-3xl animate-float-reverse" style={{ animationDelay: '10s' }} />
+        <div className="absolute bottom-40 right-10 w-56 h-56 bg-green-500/20 dark:bg-green-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '15s' }} />
       </div>
 
       {/* Navigation */}
