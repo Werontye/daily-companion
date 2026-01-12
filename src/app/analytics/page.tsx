@@ -57,6 +57,18 @@ const demoStats = {
   },
 }
 
+interface TaskCategory {
+  name: string
+  count: number
+  color: string
+}
+
+interface PeakHour {
+  time: string
+  tasks: number
+  percentage: number
+}
+
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week')
   const [animatedBars, setAnimatedBars] = useState(false)
@@ -65,6 +77,8 @@ export default function AnalyticsPage() {
     month: Stats
     year: Stats
   }>(demoStats)
+  const [taskDistribution, setTaskDistribution] = useState<TaskCategory[]>([])
+  const [peakHours, setPeakHours] = useState<PeakHour[]>([])
 
   useEffect(() => {
     // Trigger animation on mount and when timeRange changes
@@ -93,12 +107,25 @@ export default function AnalyticsPage() {
           month: emptyStats,
           year: emptyStats,
         })
+        setTaskDistribution([])
+        setPeakHours([])
         return
       }
 
       // If in demo mode and no tasks, use demo data
       if (tasks.length === 0 && isDemoMode()) {
         setStats(demoStats)
+        setTaskDistribution([
+          { name: 'Work', count: 24, color: 'bg-blue-600' },
+          { name: 'Personal', count: 12, color: 'bg-purple-600' },
+          { name: 'Health', count: 8, color: 'bg-green-600' },
+          { name: 'Learning', count: 6, color: 'bg-orange-600' },
+        ])
+        setPeakHours([
+          { time: '9-11', tasks: 18, percentage: 85 },
+          { time: '14-16', tasks: 14, percentage: 72 },
+          { time: '19-21', tasks: 10, percentage: 58 },
+        ])
         return
       }
 
@@ -170,6 +197,66 @@ export default function AnalyticsPage() {
         month: calculateRangeStats('month'),
         year: calculateRangeStats('year'),
       })
+
+      // Calculate task distribution by tags
+      const tagCounts: { [key: string]: number } = {}
+      const colors = ['bg-blue-600', 'bg-purple-600', 'bg-green-600', 'bg-orange-600', 'bg-pink-600', 'bg-indigo-600']
+
+      tasks.forEach(task => {
+        if (task.tags && task.tags.length > 0) {
+          task.tags.forEach(tag => {
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1
+          })
+        }
+      })
+
+      const distribution = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name, count], index) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          count,
+          color: colors[index] || 'bg-gray-600'
+        }))
+
+      setTaskDistribution(distribution.length > 0 ? distribution : [])
+
+      // Calculate peak productivity hours
+      const hourCounts: { [key: number]: number } = {}
+      const hourCompleted: { [key: number]: number } = {}
+
+      tasks.forEach(task => {
+        if (task.startTime) {
+          const hour = new Date(task.startTime).getHours()
+          hourCounts[hour] = (hourCounts[hour] || 0) + 1
+          if (task.status === 'completed') {
+            hourCompleted[hour] = (hourCompleted[hour] || 0) + 1
+          }
+        }
+      })
+
+      // Group into 2-hour blocks and find top 3
+      const timeBlocks: { [key: string]: { total: number, completed: number } } = {}
+
+      for (let i = 0; i < 24; i += 2) {
+        const blockKey = `${i}-${i + 2}`
+        const total = (hourCounts[i] || 0) + (hourCounts[i + 1] || 0)
+        const completed = (hourCompleted[i] || 0) + (hourCompleted[i + 1] || 0)
+        if (total > 0) {
+          timeBlocks[blockKey] = { total, completed }
+        }
+      }
+
+      const topBlocks = Object.entries(timeBlocks)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 3)
+        .map(([time, data]) => ({
+          time,
+          tasks: data.total,
+          percentage: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0
+        }))
+
+      setPeakHours(topBlocks.length > 0 ? topBlocks : [])
     }
 
     calculateStatistics()
@@ -286,7 +373,7 @@ export default function AnalyticsPage() {
               </h3>
               <div className="flex items-end justify-between gap-4 h-64">
                 {currentStats.dailyData.map((day, idx) => {
-                  const percentage = (day.completed / day.total) * 100
+                  const percentage = day.total > 0 ? (day.completed / day.total) * 100 : 0
                   const height = animatedBars ? percentage : 0
                   return (
                     <div key={day.day} className="flex-1 flex flex-col items-center gap-2">
@@ -308,7 +395,7 @@ export default function AnalyticsPage() {
                         {day.day}
                       </div>
                       <div className="text-xs text-neutral-500">
-                        {Math.round(percentage)}%
+                        {day.total > 0 ? Math.round(percentage) : 0}%
                       </div>
                     </div>
                   )
@@ -322,24 +409,25 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
               Task Distribution
             </h3>
-            <div className="space-y-3">
-              {[
-                { name: 'Work', count: 24, color: 'bg-blue-600' },
-                { name: 'Personal', count: 12, color: 'bg-purple-600' },
-                { name: 'Health', count: 8, color: 'bg-green-600' },
-                { name: 'Learning', count: 6, color: 'bg-orange-600' },
-              ].map(category => (
-                <div key={category.name} className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${category.color}`} />
-                  <span className="flex-1 text-sm text-neutral-700 dark:text-neutral-300">
-                    {category.name}
-                  </span>
-                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                    {category.count}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {taskDistribution.length > 0 ? (
+              <div className="space-y-3">
+                {taskDistribution.map(category => (
+                  <div key={category.name} className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${category.color}`} />
+                    <span className="flex-1 text-sm text-neutral-700 dark:text-neutral-300">
+                      {category.name}
+                    </span>
+                    <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {category.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-neutral-500 dark:text-neutral-400 text-sm">
+                No task categories yet. Add tags to your tasks!
+              </div>
+            )}
           </div>
 
           {/* Best Time of Day */}
@@ -347,30 +435,32 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
               Peak Productivity Hours
             </h3>
-            <div className="space-y-3">
-              {[
-                { time: '9-11 AM', tasks: 18, percentage: 85 },
-                { time: '2-4 PM', tasks: 14, percentage: 72 },
-                { time: '7-9 PM', tasks: 10, percentage: 58 },
-              ].map(slot => (
-                <div key={slot.time}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      {slot.time}
-                    </span>
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                      {slot.tasks} tasks
-                    </span>
+            {peakHours.length > 0 ? (
+              <div className="space-y-3">
+                {peakHours.map(slot => (
+                  <div key={slot.time}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {slot.time}:00
+                      </span>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                        {slot.tasks} tasks
+                      </span>
+                    </div>
+                    <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{ width: `${slot.percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-                    <div
-                      className="bg-green-600 h-2 rounded-full"
-                      style={{ width: `${slot.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-neutral-500 dark:text-neutral-400 text-sm">
+                No productivity data yet. Complete some tasks!
+              </div>
+            )}
           </div>
         </div>
 
