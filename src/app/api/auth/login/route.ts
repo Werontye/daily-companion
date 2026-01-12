@@ -25,15 +25,27 @@ export async function POST(request: NextRequest) {
     const demoUser = {
       id: 'demo-user-' + crypto.randomUUID(),
       email,
-      name: email.split('@')[0],
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-      preferences: {
+      displayName: email.split('@')[0],
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+      settings: {
         theme: 'system' as const,
-        notifications: true,
         language: 'en' as const,
-        pomodoroLength: 25,
-        shortBreakLength: 5,
-        longBreakLength: 15,
+        notifications: {
+          enabled: true,
+          sound: true,
+          vibrate: false,
+        },
+        pomodoro: {
+          workDuration: 25,
+          shortBreak: 5,
+          longBreak: 15,
+          longBreakInterval: 4,
+        },
+        privacy: {
+          localOnly: false,
+          encryptData: false,
+          shareAchievements: true,
+        },
       },
     }
 
@@ -44,9 +56,9 @@ export async function POST(request: NextRequest) {
       user: {
         id: demoUser.id,
         email: demoUser.email,
-        name: demoUser.name,
-        avatar: demoUser.avatar,
-        preferences: demoUser.preferences,
+        displayName: demoUser.displayName,
+        avatarUrl: demoUser.avatarUrl,
+        settings: demoUser.settings,
       },
     })
 
