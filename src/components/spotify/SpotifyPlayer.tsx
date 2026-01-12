@@ -43,8 +43,8 @@ export function SpotifyPlayer() {
   const [isConnected, setIsConnected] = useState(false)
 
   const handleConnectSpotify = () => {
-    // In real app, this would initiate OAuth flow
-    alert('Spotify OAuth integration coming soon! For now, you can use the web player or Spotify app alongside Daily Companion.')
+    // In a real production app with Spotify OAuth, this would initiate the OAuth flow
+    // For now, we'll just enable the player to show focus playlists
     setIsConnected(true)
   }
 
@@ -89,18 +89,27 @@ export function SpotifyPlayer() {
 
       {!isConnected ? (
         <div className="text-center py-8">
-          <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            Connect your Spotify account to play music while you focus
+          <div className="text-5xl mb-4">🎵</div>
+          <p className="text-neutral-900 dark:text-neutral-100 font-semibold mb-2">
+            Focus with Music
+          </p>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6 text-sm">
+            Listen to curated focus playlists on Spotify while you work
           </p>
           <button
             onClick={handleConnectSpotify}
-            className="btn bg-green-600 hover:bg-green-700 text-white"
+            className="btn bg-green-600 hover:bg-green-700 text-white shadow-lg"
           >
-            Connect Spotify
+            🎧 Browse Focus Playlists
           </button>
         </div>
       ) : (
         <div className="space-y-3">
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 mb-4">
+            <p className="text-xs text-neutral-700 dark:text-neutral-300">
+              💡 Playlists will open in Spotify web player. Make sure you're logged into Spotify!
+            </p>
+          </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
             Choose a playlist to enhance your focus:
           </p>
@@ -137,7 +146,13 @@ export function SpotifyPlayer() {
           )}
 
           <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
-            <button className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300">
+            <button
+              onClick={() => {
+                setIsConnected(false)
+                setSelectedPlaylist(null)
+              }}
+              className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+            >
               Disconnect Spotify
             </button>
           </div>
