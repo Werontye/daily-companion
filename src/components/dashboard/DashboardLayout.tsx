@@ -14,13 +14,15 @@ import {
   MenuIcon,
   XIcon
 } from '@/components/icons'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageToggle } from '@/components/LanguageToggle'
+import { getAchievements } from '@/lib/storage/achievements'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [recentAchievements, setRecentAchievements] = useState<any[]>([])
 
   const navigation = [
     { name: 'Today', href: '/dashboard', icon: CalendarIcon },
@@ -30,6 +32,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { name: 'Shared Plans', href: '/shared-plans', icon: UserGroupIcon },
     { name: 'Achievements', href: '/achievements', icon: TrophyIcon },
   ]
+
+  useEffect(() => {
+    // Load recent unlocked achievements
+    const achievements = getAchievements()
+    const unlocked = achievements
+      .filter(a => a.unlocked)
+      .sort((a, b) => {
+        if (!a.unlockedAt) return 1
+        if (!b.unlockedAt) return -1
+        return b.unlockedAt.getTime() - a.unlockedAt.getTime()
+      })
+      .slice(0, 3)
+    setRecentAchievements(unlocked)
+  }, [])
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
@@ -101,6 +117,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 aria-label="Settings"
               >
                 <SettingsIcon className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+              </Link>
+
+              {/* Exit to Home */}
+              <Link
+                href="/"
+                className="px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-sm font-medium text-neutral-700 dark:text-neutral-300"
+                aria-label="Exit to Home"
+              >
+                Exit
               </Link>
             </div>
           </div>
@@ -189,49 +214,36 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
 
-              <div className="space-y-3">
-                <div className="p-3 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">🌅</div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
-                        Early Bird
+              {recentAchievements.length > 0 ? (
+                <div className="space-y-3">
+                  {recentAchievements.map((achievement, index) => {
+                    const colors = [
+                      'from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-yellow-200 dark:border-yellow-800',
+                      'from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800',
+                      'from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800',
+                    ]
+                    return (
+                      <div key={achievement.id} className={`p-3 bg-gradient-to-br ${colors[index]} rounded-lg border`}>
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl">{achievement.icon}</div>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                              {achievement.name}
+                            </div>
+                            <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                              {achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unlocked'}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                        Jan 10, 2026
-                      </div>
-                    </div>
-                  </div>
+                    )
+                  })}
                 </div>
-
-                <div className="p-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">💪</div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
-                        Week Warrior
-                      </div>
-                      <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                        Jan 8, 2026
-                      </div>
-                    </div>
-                  </div>
+              ) : (
+                <div className="text-center py-6 text-neutral-500 dark:text-neutral-400 text-sm">
+                  No achievements yet. Complete tasks to unlock achievements!
                 </div>
-
-                <div className="p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">🤝</div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
-                        Team Player
-                      </div>
-                      <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                        Jan 5, 2026
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </aside>

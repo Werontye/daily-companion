@@ -1,6 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
+import { getAchievements, saveAchievements } from '@/lib/storage/achievements'
+import { isDemoMode } from '@/lib/demoMode'
 
 interface Achievement {
   id: string
@@ -14,7 +17,7 @@ interface Achievement {
   category: 'productivity' | 'consistency' | 'milestones' | 'social'
 }
 
-const achievements: Achievement[] = [
+const demoAchievements: Achievement[] = [
   {
     id: '1',
     name: 'Early Bird',
@@ -230,6 +233,21 @@ const categories = {
 }
 
 export default function AchievementsPage() {
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+
+  useEffect(() => {
+    // Load achievements from localStorage
+    let loadedAchievements = getAchievements()
+
+    // If no achievements exist and in demo mode, load demo data
+    if (loadedAchievements.length === 0 && isDemoMode()) {
+      loadedAchievements = demoAchievements
+      saveAchievements(loadedAchievements)
+    }
+
+    setAchievements(loadedAchievements)
+  }, [])
+
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const totalPoints = unlockedCount * 100
 

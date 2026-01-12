@@ -50,6 +50,8 @@ export function SpotifyPlayer() {
 
   const handlePlayPlaylist = (playlist: Playlist) => {
     setSelectedPlaylist(playlist)
+    // Open Spotify in new tab as fallback for iframe blocking
+    window.open(`https://open.spotify.com/playlist/${playlist.id}`, '_blank')
   }
 
   if (!isExpanded) {
@@ -142,7 +144,7 @@ export function SpotifyPlayer() {
             <>
               <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 mb-4">
                 <p className="text-xs text-neutral-700 dark:text-neutral-300">
-                  💡 Select a playlist to play it directly in the app!
+                  💡 Playlists will open in Spotify. Make sure you're logged in to Spotify!
                 </p>
               </div>
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
