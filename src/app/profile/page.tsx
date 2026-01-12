@@ -14,10 +14,13 @@ export default function ProfilePage() {
     email: '',
     bio: '',
     avatar: '',
+    avatarType: 'initial' as 'initial' | 'photo',
+    avatarUrl: '',
     joinDate: new Date(),
   })
 
   const [editedProfile, setEditedProfile] = useState(profile)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
   // Fetch user session on mount
   useEffect(() => {
@@ -67,6 +70,45 @@ export default function ProfilePage() {
     setEditedProfile({ ...editedProfile, avatar: letter.toUpperCase() })
   }
 
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ message: 'Image must be smaller than 5MB', type: 'error' })
+      return
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setToast({ message: 'Please upload an image file', type: 'error' })
+      return
+    }
+
+    // Read and preview the image
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      setPhotoPreview(result)
+      setEditedProfile({
+        ...editedProfile,
+        avatarType: 'photo',
+        avatarUrl: result,
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removePhoto = () => {
+    setPhotoPreview(null)
+    setEditedProfile({
+      ...editedProfile,
+      avatarType: 'initial',
+      avatarUrl: '',
+    })
+  }
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -95,8 +137,37 @@ export default function ProfilePage() {
           {/* Profile Card */}
           <div className="lg:col-span-1">
             <div className="card text-center sticky top-8">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-5xl mx-auto mb-4">
-                {isEditing ? editedProfile.avatar : profile.avatar}
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                {(isEditing ? editedProfile.avatarType === 'photo' : profile.avatarType === 'photo') &&
+                 (isEditing ? editedProfile.avatarUrl : profile.avatarUrl) ? (
+                  <img
+                    src={isEditing ? editedProfile.avatarUrl : profile.avatarUrl}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover border-4 border-blue-600"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-5xl">
+                    {isEditing ? editedProfile.avatar : profile.avatar}
+                  </div>
+                )}
+                {isEditing && (
+                  <label
+                    htmlFor="photo-upload"
+                    className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center cursor-pointer text-white shadow-lg transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
               <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
                 {isEditing ? editedProfile.name : profile.name}
@@ -172,23 +243,52 @@ export default function ProfilePage() {
 
                 {isEditing && (
                   <div>
-                    <label className="label">Avatar Initial</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={editedProfile.avatar}
-                        onChange={(e) => handleAvatarChange(e.target.value.slice(0, 1))}
-                        className="input"
-                        placeholder="U"
-                        maxLength={1}
-                      />
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
-                        {editedProfile.avatar || '?'}
-                      </div>
+                    <label className="label">Profile Picture</label>
+                    <div className="space-y-4">
+                      {editedProfile.avatarType === 'photo' && editedProfile.avatarUrl ? (
+                        <div className="flex items-center gap-4 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                          <img
+                            src={editedProfile.avatarUrl}
+                            alt="Preview"
+                            className="w-20 h-20 rounded-full object-cover border-2 border-blue-600"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                              Profile photo uploaded
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              Click the camera icon above to change
+                            </p>
+                          </div>
+                          <button
+                            onClick={removePhoto}
+                            className="btn btn-secondary btn-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="label">Avatar Initial</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={editedProfile.avatar}
+                              onChange={(e) => handleAvatarChange(e.target.value.slice(0, 1))}
+                              className="input"
+                              placeholder="U"
+                              maxLength={1}
+                            />
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+                              {editedProfile.avatar || '?'}
+                            </div>
+                          </div>
+                          <p className="text-xs text-neutral-500 mt-1">
+                            Choose a letter for your avatar, or upload a photo using the camera icon above
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      Choose a letter for your avatar
-                    </p>
                   </div>
                 )}
               </div>
