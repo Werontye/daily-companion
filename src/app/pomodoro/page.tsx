@@ -9,16 +9,18 @@ type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
 
 export default function PomodoroPage() {
   const [mode, setMode] = useState<TimerMode>('focus')
-  const [timeLeft, setTimeLeft] = useState(25 * 60) // 25 minutes in seconds
   const [isRunning, setIsRunning] = useState(false)
   const [completedPomodoros, setCompletedPomodoros] = useState(0)
+  const [showSettings, setShowSettings] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  const durations = {
+  const [durations, setDurations] = useState({
     focus: 25 * 60,
     shortBreak: 5 * 60,
     longBreak: 15 * 60,
-  }
+  })
+
+  const [timeLeft, setTimeLeft] = useState(durations.focus)
 
   const modeLabels = {
     focus: 'Focus Time',
@@ -84,6 +86,18 @@ export default function PomodoroPage() {
     setIsRunning(false)
   }
 
+  const updateDuration = (timerMode: TimerMode, minutes: number) => {
+    const seconds = minutes * 60
+    setDurations(prev => ({
+      ...prev,
+      [timerMode]: seconds,
+    }))
+    // If updating current mode, reset timer
+    if (timerMode === mode && !isRunning) {
+      setTimeLeft(seconds)
+    }
+  }
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -95,7 +109,17 @@ export default function PomodoroPage() {
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto py-8">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="absolute right-0 top-0 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            aria-label="Timer Settings"
+          >
+            <svg className="w-6 h-6 text-neutral-600 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
           <h1 className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
             Pomodoro Timer
           </h1>
@@ -248,6 +272,72 @@ export default function PomodoroPage() {
 
       {/* Spotify Player */}
       <SpotifyPlayer />
+
+      {/* Timer Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                Timer Settings
+              </h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">Focus Time (minutes)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={Math.floor(durations.focus / 60)}
+                  onChange={(e) => updateDuration('focus', parseInt(e.target.value) || 25)}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="label">Short Break (minutes)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={Math.floor(durations.shortBreak / 60)}
+                  onChange={(e) => updateDuration('shortBreak', parseInt(e.target.value) || 5)}
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="label">Long Break (minutes)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={Math.floor(durations.longBreak / 60)}
+                  onChange={(e) => updateDuration('longBreak', parseInt(e.target.value) || 15)}
+                  className="input"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="btn btn-primary w-full"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }
