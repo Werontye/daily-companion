@@ -48,7 +48,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <MenuIcon className="h-6 w-6" />
                 )}
               </button>
-              <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <Link href="/dashboard" className="flex items-center hover:opacity-80 transition-opacity">
                 <CheckCircleIcon className="h-8 w-8 text-blue-600" />
                 <span className="ml-2 text-xl font-bold text-neutral-900 dark:text-neutral-100">
                   Daily Companion
