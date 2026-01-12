@@ -37,6 +37,8 @@ const demoTemplates: TemplateItem[] = [
       { title: 'Review daily goals', duration: 15, priority: 'high' },
     ],
     usageCount: 24,
+    isPublic: true,
+    ownerId: 'demo-user',
   },
   {
     id: '2',
@@ -54,6 +56,8 @@ const demoTemplates: TemplateItem[] = [
       { title: 'Long break', duration: 15, priority: 'low' },
     ],
     usageCount: 42,
+    isPublic: true,
+    ownerId: 'demo-user',
   },
   {
     id: '3',
@@ -69,6 +73,8 @@ const demoTemplates: TemplateItem[] = [
       { title: 'Schedule important meetings', duration: 15, priority: 'medium' },
     ],
     usageCount: 18,
+    isPublic: true,
+    ownerId: 'demo-user',
   },
   {
     id: '4',
@@ -84,6 +90,8 @@ const demoTemplates: TemplateItem[] = [
       { title: 'Review and summarize', duration: 15, priority: 'medium' },
     ],
     usageCount: 31,
+    isPublic: true,
+    ownerId: 'demo-user',
   },
 ]
 
