@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
   const completedToday = todayTasks.filter(t => t.status === 'completed').length
   const totalPomodoros = tasks.reduce((sum, task) =>
-    sum + task.pomodoroSessions.filter(s => s.completed).length, 0
+    sum + (task.pomodoroSessions?.filter(s => s.completed).length || 0), 0
   )
 
   return (

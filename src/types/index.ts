@@ -56,12 +56,13 @@ export interface Task {
   location?: Location
   stepTrigger?: StepTrigger
   templateId?: string
-  assignees: string[]
+  assignees?: string[]
   tags: string[]
   notes?: string
-  pomodoroSessions: PomodoroSession[]
-  createdAt: Date
-  updatedAt: Date
+  pomodoroSessions?: PomodoroSession[]
+  createdAt?: Date
+  updatedAt?: Date
+  completedAt?: Date
 }
 
 export interface RepeatRule {
