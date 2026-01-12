@@ -35,17 +35,36 @@ export async function POST(request: NextRequest) {
     const newUser: User = {
       id: crypto.randomUUID(),
       email,
-      name: name || email.split('@')[0],
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-      preferences: {
+      displayName: name || email.split('@')[0],
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+      settings: {
         theme: 'system',
-        notifications: true,
         language: 'en',
-        pomodoroLength: 25,
-        shortBreakLength: 5,
-        longBreakLength: 15,
+        notifications: {
+          enabled: true,
+          sound: true,
+          vibrate: false,
+        },
+        pomodoro: {
+          workDuration: 25,
+          shortBreak: 5,
+          longBreak: 15,
+          longBreakInterval: 4,
+        },
+        privacy: {
+          localOnly: false,
+          encryptData: false,
+          shareAchievements: true,
+        },
+      },
+      privacyFlags: {
+        allowAnalytics: false,
+        allowCloudSync: false,
+        allowLocationTracking: false,
+        allowActivityTracking: false,
       },
       createdAt: new Date(),
+      updatedAt: new Date(),
     }
 
     users.push(newUser)
@@ -59,9 +78,9 @@ export async function POST(request: NextRequest) {
         user: {
           id: newUser.id,
           email: newUser.email,
-          name: newUser.name,
-          avatar: newUser.avatar,
-          preferences: newUser.preferences,
+          displayName: newUser.displayName,
+          avatarUrl: newUser.avatarUrl,
+          settings: newUser.settings,
         },
       },
       { status: 201 }
@@ -119,9 +138,9 @@ export async function GET(request: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        avatar: user.avatar,
-        preferences: user.preferences,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        settings: user.settings,
       },
     })
   } catch (error) {
