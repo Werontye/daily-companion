@@ -3,10 +3,68 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { ChartBarIcon, ClockIcon, CheckCircleIcon } from '@/components/icons'
+import { getTasks } from '@/lib/storage/tasks'
+import { isDemoMode } from '@/lib/demoMode'
+
+interface DailyData {
+  day: string
+  completed: number
+  total: number
+}
+
+interface Stats {
+  tasksCompleted: number
+  tasksTotal: number
+  pomodoroSessions: number
+  focusHours: number
+  productivityScore: number
+  dailyData: DailyData[]
+}
+
+// Demo data for demo mode
+const demoStats = {
+  week: {
+    tasksCompleted: 42,
+    tasksTotal: 58,
+    pomodoroSessions: 24,
+    focusHours: 10.5,
+    productivityScore: 72,
+    dailyData: [
+      { day: 'Mon', completed: 8, total: 10 },
+      { day: 'Tue', completed: 6, total: 9 },
+      { day: 'Wed', completed: 7, total: 8 },
+      { day: 'Thu', completed: 5, total: 10 },
+      { day: 'Fri', completed: 9, total: 12 },
+      { day: 'Sat', completed: 4, total: 5 },
+      { day: 'Sun', completed: 3, total: 4 },
+    ],
+  },
+  month: {
+    tasksCompleted: 168,
+    tasksTotal: 245,
+    pomodoroSessions: 96,
+    focusHours: 42,
+    productivityScore: 69,
+    dailyData: [],
+  },
+  year: {
+    tasksCompleted: 1842,
+    tasksTotal: 2654,
+    pomodoroSessions: 1152,
+    focusHours: 480,
+    productivityScore: 71,
+    dailyData: [],
+  },
+}
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week')
   const [animatedBars, setAnimatedBars] = useState(false)
+  const [stats, setStats] = useState<{
+    week: Stats
+    month: Stats
+    year: Stats
+  }>(demoStats)
 
   useEffect(() => {
     // Trigger animation on mount and when timeRange changes
@@ -15,44 +73,112 @@ export default function AnalyticsPage() {
     return () => clearTimeout(timer)
   }, [timeRange])
 
-  // Demo data
-  const stats = {
-    week: {
-      tasksCompleted: 42,
-      tasksTotal: 58,
-      pomodoroSessions: 24,
-      focusHours: 10.5,
-      productivityScore: 72,
-      dailyData: [
-        { day: 'Mon', completed: 8, total: 10 },
-        { day: 'Tue', completed: 6, total: 9 },
-        { day: 'Wed', completed: 7, total: 8 },
-        { day: 'Thu', completed: 5, total: 10 },
-        { day: 'Fri', completed: 9, total: 12 },
-        { day: 'Sat', completed: 4, total: 5 },
-        { day: 'Sun', completed: 3, total: 4 },
-      ],
-    },
-    month: {
-      tasksCompleted: 168,
-      tasksTotal: 245,
-      pomodoroSessions: 96,
-      focusHours: 42,
-      productivityScore: 69,
-      dailyData: [],
-    },
-    year: {
-      tasksCompleted: 1842,
-      tasksTotal: 2654,
-      pomodoroSessions: 1152,
-      focusHours: 480,
-      productivityScore: 71,
-      dailyData: [],
-    },
-  }
+  useEffect(() => {
+    // Calculate statistics from localStorage
+    const calculateStatistics = () => {
+      const tasks = getTasks()
+
+      // If no tasks and not in demo mode, return empty stats
+      if (tasks.length === 0 && !isDemoMode()) {
+        const emptyStats = {
+          tasksCompleted: 0,
+          tasksTotal: 0,
+          pomodoroSessions: 0,
+          focusHours: 0,
+          productivityScore: 0,
+          dailyData: [] as DailyData[],
+        }
+        setStats({
+          week: emptyStats,
+          month: emptyStats,
+          year: emptyStats,
+        })
+        return
+      }
+
+      // If in demo mode and no tasks, use demo data
+      if (tasks.length === 0 && isDemoMode()) {
+        setStats(demoStats)
+        return
+      }
+
+      const now = new Date()
+
+      // Helper function to get date range
+      const getDateRange = (range: 'week' | 'month' | 'year') => {
+        const start = new Date(now)
+        if (range === 'week') {
+          start.setDate(now.getDate() - 7)
+        } else if (range === 'month') {
+          start.setDate(now.getDate() - 30)
+        } else {
+          start.setDate(now.getDate() - 365)
+        }
+        return start
+      }
+
+      // Calculate stats for each time range
+      const calculateRangeStats = (range: 'week' | 'month' | 'year'): Stats => {
+        const startDate = getDateRange(range)
+        const rangeTasks = tasks.filter(t => {
+          if (!t.startTime) return false
+          const taskDate = new Date(t.startTime)
+          return taskDate >= startDate && taskDate <= now
+        })
+
+        const completed = rangeTasks.filter(t => t.status === 'completed').length
+        const total = rangeTasks.length
+
+        // Calculate productivity score (0-100 based on completion rate and consistency)
+        const completionRate = total > 0 ? (completed / total) * 100 : 0
+        const productivityScore = Math.min(100, Math.round(completionRate))
+
+        // For week range, calculate daily data
+        const dailyData: DailyData[] = []
+        if (range === 'week') {
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(now)
+            date.setDate(now.getDate() - i)
+            const dateStr = date.toDateString()
+
+            const dayTasks = rangeTasks.filter(t =>
+              t.startTime && new Date(t.startTime).toDateString() === dateStr
+            )
+            const dayCompleted = dayTasks.filter(t => t.status === 'completed').length
+
+            dailyData.push({
+              day: days[date.getDay()],
+              completed: dayCompleted,
+              total: dayTasks.length,
+            })
+          }
+        }
+
+        return {
+          tasksCompleted: completed,
+          tasksTotal: total,
+          pomodoroSessions: 0, // Not tracked yet
+          focusHours: 0, // Not tracked yet
+          productivityScore,
+          dailyData,
+        }
+      }
+
+      setStats({
+        week: calculateRangeStats('week'),
+        month: calculateRangeStats('month'),
+        year: calculateRangeStats('year'),
+      })
+    }
+
+    calculateStatistics()
+  }, [])
 
   const currentStats = stats[timeRange]
-  const completionRate = Math.round((currentStats.tasksCompleted / currentStats.tasksTotal) * 100)
+  const completionRate = currentStats.tasksTotal > 0
+    ? Math.round((currentStats.tasksCompleted / currentStats.tasksTotal) * 100)
+    : 0
 
   return (
     <DashboardLayout>
