@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useRouter } from 'next/navigation'
@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation'
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
+
+  const [userEmail, setUserEmail] = useState<string>('')
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
 
   const [settings, setSettings] = useState({
     notifications: true,
@@ -24,6 +27,37 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [passwordError, setPasswordError] = useState('')
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+
+  useEffect(() => {
+    // Load user profile data
+    const loadProfile = async () => {
+      try {
+        setIsLoadingProfile(true)
+        const response = await fetch('/api/user/profile')
+        if (response.ok) {
+          const data = await response.json()
+          setUserEmail(data.email || '')
+        } else {
+          console.error('Failed to load user profile')
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error)
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    loadProfile()
+  }, [])
+
   const handleToggle = (key: keyof typeof settings) => {
     setSettings(prev => ({
       ...prev,
@@ -36,6 +70,59 @@ export default function SettingsPage() {
       ...prev,
       [key]: value,
     }))
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordError('')
+
+    // Validate passwords
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError('Please fill in all fields')
+      return
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters')
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match')
+      return
+    }
+
+    setIsChangingPassword(true)
+
+    try {
+      const response = await fetch('/api/user/password', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      })
+
+      if (response.ok) {
+        alert('Password changed successfully!')
+        setShowPasswordModal(false)
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        })
+      } else {
+        const data = await response.json()
+        setPasswordError(data.error || 'Failed to change password')
+      }
+    } catch (error) {
+      console.error('Error changing password:', error)
+      setPasswordError('An error occurred. Please try again.')
+    } finally {
+      setIsChangingPassword(false)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -290,14 +377,17 @@ export default function SettingsPage() {
                 <label className="label">Email</label>
                 <input
                   type="email"
-                  value="user@example.com"
+                  value={isLoadingProfile ? 'Loading...' : (userEmail || 'No email')}
                   className="input"
                   disabled
                 />
               </div>
 
               <div className="flex gap-3">
-                <button className="btn btn-secondary flex-1">
+                <button
+                  className="btn btn-secondary flex-1"
+                  onClick={() => setShowPasswordModal(true)}
+                >
                   Change Password
                 </button>
                 <button className="btn btn-secondary flex-1">
@@ -325,6 +415,84 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+              Change Password
+            </h3>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="label">Current Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="input"
+                  placeholder="Enter current password"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="label">New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className="input"
+                  placeholder="Enter new password (min 6 characters)"
+                />
+              </div>
+
+              <div>
+                <label className="label">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="input"
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              {passwordError && (
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  {passwordError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false)
+                  setPasswordForm({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: '',
+                  })
+                  setPasswordError('')
+                }}
+                className="btn btn-secondary flex-1"
+                disabled={isChangingPassword}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangePassword}
+                disabled={isChangingPassword}
+                className="btn btn-primary flex-1"
+              >
+                {isChangingPassword ? 'Changing...' : 'Change Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteModal && (
