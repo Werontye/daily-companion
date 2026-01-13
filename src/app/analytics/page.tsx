@@ -45,7 +45,12 @@ const demoStats = {
     pomodoroSessions: 96,
     focusHours: 42,
     productivityScore: 69,
-    dailyData: [],
+    dailyData: [
+      { day: 'W1', completed: 38, total: 58 },
+      { day: 'W2', completed: 42, total: 62 },
+      { day: 'W3', completed: 45, total: 64 },
+      { day: 'W4', completed: 43, total: 61 },
+    ],
   },
   year: {
     tasksCompleted: 1842,
@@ -53,7 +58,20 @@ const demoStats = {
     pomodoroSessions: 1152,
     focusHours: 480,
     productivityScore: 71,
-    dailyData: [],
+    dailyData: [
+      { day: 'Jan', completed: 142, total: 218 },
+      { day: 'Feb', completed: 138, total: 205 },
+      { day: 'Mar', completed: 156, total: 228 },
+      { day: 'Apr', completed: 148, total: 215 },
+      { day: 'May', completed: 162, total: 232 },
+      { day: 'Jun', completed: 154, total: 224 },
+      { day: 'Jul', completed: 158, total: 226 },
+      { day: 'Aug', completed: 152, total: 220 },
+      { day: 'Sep', completed: 146, total: 212 },
+      { day: 'Oct', completed: 160, total: 230 },
+      { day: 'Nov', completed: 164, total: 234 },
+      { day: 'Dec', completed: 162, total: 210 },
+    ],
   },
 }
 
@@ -160,9 +178,10 @@ export default function AnalyticsPage() {
         const completionRate = total > 0 ? (completed / total) * 100 : 0
         const productivityScore = Math.min(100, Math.round(completionRate))
 
-        // For week range, calculate daily data
+        // Calculate daily/weekly/monthly data based on range
         const dailyData: DailyData[] = []
         if (range === 'week') {
+          // For week: show last 7 days
           const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
           for (let i = 6; i >= 0; i--) {
             const date = new Date(now)
@@ -178,6 +197,49 @@ export default function AnalyticsPage() {
               day: days[date.getDay()],
               completed: dayCompleted,
               total: dayTasks.length,
+            })
+          }
+        } else if (range === 'month') {
+          // For month: show last 4 weeks
+          for (let i = 3; i >= 0; i--) {
+            const weekStart = new Date(now)
+            weekStart.setDate(now.getDate() - (i * 7) - 6)
+            const weekEnd = new Date(now)
+            weekEnd.setDate(now.getDate() - (i * 7))
+
+            const weekTasks = rangeTasks.filter(t => {
+              if (!t.startTime) return false
+              const taskDate = new Date(t.startTime)
+              return taskDate >= weekStart && taskDate <= weekEnd
+            })
+            const weekCompleted = weekTasks.filter(t => t.status === 'completed').length
+
+            dailyData.push({
+              day: `W${4 - i}`,
+              completed: weekCompleted,
+              total: weekTasks.length,
+            })
+          }
+        } else if (range === 'year') {
+          // For year: show last 12 months
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+          for (let i = 11; i >= 0; i--) {
+            const monthDate = new Date(now)
+            monthDate.setMonth(now.getMonth() - i)
+            const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
+            const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
+
+            const monthTasks = rangeTasks.filter(t => {
+              if (!t.startTime) return false
+              const taskDate = new Date(t.startTime)
+              return taskDate >= monthStart && taskDate <= monthEnd
+            })
+            const monthCompleted = monthTasks.filter(t => t.status === 'completed').length
+
+            dailyData.push({
+              day: months[monthDate.getMonth()],
+              completed: monthCompleted,
+              total: monthTasks.length,
             })
           }
         }
@@ -365,11 +427,11 @@ export default function AnalyticsPage() {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Weekly Progress Chart - Bar Chart Style */}
-          {timeRange === 'week' && (
+          {/* Dynamic Progress Chart - Shows days/weeks/months based on timeRange */}
+          {currentStats.dailyData.length > 0 && (
             <div className="card lg:col-span-2">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-                Daily Task Completion
+                {timeRange === 'week' ? 'Daily Task Completion' : timeRange === 'month' ? 'Weekly Task Completion' : 'Monthly Task Completion'}
               </h3>
               <div className="flex items-end justify-between gap-4 h-64">
                 {currentStats.dailyData.map((day, idx) => {
