@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
-import { getAchievements, saveAchievements } from '@/lib/storage/achievements'
-import { isDemoMode } from '@/lib/demoMode'
 
 interface Achievement {
   id: string
@@ -17,214 +15,6 @@ interface Achievement {
   category: 'productivity' | 'consistency' | 'milestones' | 'social'
 }
 
-const demoAchievements: Achievement[] = [
-  {
-    id: '1',
-    name: 'Early Bird',
-    description: 'Complete 5 tasks before 9 AM',
-    icon: '🌅',
-    unlocked: true,
-    unlockedAt: new Date('2026-01-10'),
-    progress: 5,
-    maxProgress: 5,
-    category: 'productivity',
-  },
-  {
-    id: '2',
-    name: 'Week Warrior',
-    description: 'Complete all tasks for 7 days straight',
-    icon: '💪',
-    unlocked: true,
-    unlockedAt: new Date('2026-01-08'),
-    progress: 7,
-    maxProgress: 7,
-    category: 'consistency',
-  },
-  {
-    id: '3',
-    name: 'Century Club',
-    description: 'Complete 100 tasks total',
-    icon: '💯',
-    unlocked: false,
-    progress: 67,
-    maxProgress: 100,
-    category: 'milestones',
-  },
-  {
-    id: '4',
-    name: 'Pomodoro Master',
-    description: 'Complete 50 Pomodoro sessions',
-    icon: '🍅',
-    unlocked: false,
-    progress: 32,
-    maxProgress: 50,
-    category: 'productivity',
-  },
-  {
-    id: '5',
-    name: 'Team Player',
-    description: 'Collaborate on 3 shared plans',
-    icon: '🤝',
-    unlocked: true,
-    unlockedAt: new Date('2026-01-09'),
-    progress: 3,
-    maxProgress: 3,
-    category: 'social',
-  },
-  {
-    id: '6',
-    name: 'Night Owl',
-    description: 'Complete 10 tasks after 8 PM',
-    icon: '🦉',
-    unlocked: false,
-    progress: 4,
-    maxProgress: 10,
-    category: 'productivity',
-  },
-  {
-    id: '7',
-    name: 'Template Creator',
-    description: 'Create 5 custom task templates',
-    icon: '📋',
-    unlocked: false,
-    progress: 2,
-    maxProgress: 5,
-    category: 'milestones',
-  },
-  {
-    id: '8',
-    name: 'Marathon Runner',
-    description: 'Maintain a 30-day streak',
-    icon: '🏃',
-    unlocked: false,
-    progress: 12,
-    maxProgress: 30,
-    category: 'consistency',
-  },
-  {
-    id: '9',
-    name: 'Focus Champion',
-    description: 'Complete 5 hours of focused work in one day',
-    icon: '🎯',
-    unlocked: true,
-    unlockedAt: new Date('2026-01-07'),
-    progress: 5,
-    maxProgress: 5,
-    category: 'productivity',
-  },
-  {
-    id: '10',
-    name: 'Social Butterfly',
-    description: 'Invite 5 friends to shared plans',
-    icon: '🦋',
-    unlocked: false,
-    progress: 1,
-    maxProgress: 5,
-    category: 'social',
-  },
-  {
-    id: '11',
-    name: 'Speedster',
-    description: 'Complete 20 tasks in a single day',
-    icon: '⚡',
-    unlocked: false,
-    progress: 12,
-    maxProgress: 20,
-    category: 'productivity',
-  },
-  {
-    id: '12',
-    name: 'Perfect Week',
-    description: 'Achieve 100% completion rate for a week',
-    icon: '⭐',
-    unlocked: true,
-    unlockedAt: new Date('2026-01-06'),
-    progress: 7,
-    maxProgress: 7,
-    category: 'consistency',
-  },
-  {
-    id: '13',
-    name: 'Zen Master',
-    description: 'Complete 100 Pomodoro sessions',
-    icon: '🧘',
-    unlocked: false,
-    progress: 32,
-    maxProgress: 100,
-    category: 'milestones',
-  },
-  {
-    id: '14',
-    name: 'Overachiever',
-    description: 'Complete 500 tasks total',
-    icon: '🏆',
-    unlocked: false,
-    progress: 248,
-    maxProgress: 500,
-    category: 'milestones',
-  },
-  {
-    id: '15',
-    name: 'Influencer',
-    description: 'Have 10 people join your shared plans',
-    icon: '💬',
-    unlocked: false,
-    progress: 3,
-    maxProgress: 10,
-    category: 'social',
-  },
-  {
-    id: '16',
-    name: 'Weekend Warrior',
-    description: 'Complete 20 tasks on weekends',
-    icon: '🌴',
-    unlocked: false,
-    progress: 8,
-    maxProgress: 20,
-    category: 'productivity',
-  },
-  {
-    id: '17',
-    name: 'Comeback King',
-    description: 'Recover from a broken streak within 3 days',
-    icon: '👑',
-    unlocked: false,
-    progress: 0,
-    maxProgress: 1,
-    category: 'consistency',
-  },
-  {
-    id: '18',
-    name: 'Template Master',
-    description: 'Create 20 custom templates',
-    icon: '📚',
-    unlocked: false,
-    progress: 2,
-    maxProgress: 20,
-    category: 'milestones',
-  },
-  {
-    id: '19',
-    name: 'Time Lord',
-    description: 'Log 100 hours of focused work',
-    icon: '⏰',
-    unlocked: false,
-    progress: 42,
-    maxProgress: 100,
-    category: 'productivity',
-  },
-  {
-    id: '20',
-    name: 'Legendary',
-    description: 'Maintain a 365-day streak',
-    icon: '🔥',
-    unlocked: false,
-    progress: 12,
-    maxProgress: 365,
-    category: 'consistency',
-  },
-]
-
 const categories = {
   productivity: { name: 'Productivity', color: 'blue' },
   consistency: { name: 'Consistency', color: 'green' },
@@ -234,33 +24,28 @@ const categories = {
 
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load achievements from localStorage
-    let loadedAchievements = getAchievements()
-
-    // If no achievements exist, initialize with all locked achievements
-    if (loadedAchievements.length === 0) {
-      // Create locked versions of all achievements
-      const lockedAchievements = demoAchievements.map(ach => ({
-        ...ach,
-        unlocked: false,
-        unlockedAt: undefined,
-        progress: 0,
-      }))
-
-      // In demo mode, use the demo data with some unlocked
-      if (isDemoMode()) {
-        loadedAchievements = demoAchievements
-      } else {
-        // For new accounts, show all achievements as locked
-        loadedAchievements = lockedAchievements
+    // Load achievements from API
+    const loadAchievements = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/achievements')
+        if (response.ok) {
+          const data = await response.json()
+          setAchievements(data.achievements || [])
+        } else {
+          console.error('Failed to load achievements')
+        }
+      } catch (error) {
+        console.error('Error loading achievements:', error)
+      } finally {
+        setIsLoading(false)
       }
-
-      saveAchievements(loadedAchievements)
     }
 
-    setAchievements(loadedAchievements)
+    loadAchievements()
   }, [])
 
   const unlockedCount = achievements.filter(a => a.unlocked).length
