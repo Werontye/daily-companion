@@ -273,9 +273,10 @@ export default function SharedPlansPage() {
                               {message.userName}
                             </span>
                             <span className="text-xs text-neutral-500">
-                              {message.timestamp.toLocaleTimeString('en-US', {
+                              {message.timestamp.toLocaleTimeString('en-GB', {
                                 hour: '2-digit',
                                 minute: '2-digit',
+                                hour12: false,
                               })}
                             </span>
                           </div>

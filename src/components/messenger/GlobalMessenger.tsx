@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { XIcon } from '@/components/icons'
-import { isDemoMode } from '@/lib/demoMode'
 
 interface Message {
   id: string
@@ -20,54 +19,6 @@ interface Chat {
   unreadCount: number
 }
 
-const demoMessages: Message[] = [
-  {
-    id: '1',
-    sender: 'John Doe',
-    text: 'Hey! How is the project going?',
-    timestamp: new Date(Date.now() - 3600000),
-    isOwn: false
-  },
-  {
-    id: '2',
-    sender: 'You',
-    text: 'Great! Almost finished with the templates feature.',
-    timestamp: new Date(Date.now() - 1800000),
-    isOwn: true
-  },
-  {
-    id: '3',
-    sender: 'John Doe',
-    text: 'Awesome! Let me know when you need me to test it.',
-    timestamp: new Date(Date.now() - 900000),
-    isOwn: false
-  }
-]
-
-const demoChats: Chat[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    avatar: '👤',
-    lastMessage: 'Awesome! Let me know when...',
-    unreadCount: 0
-  },
-  {
-    id: '2',
-    name: 'Team Project',
-    avatar: '👥',
-    lastMessage: 'Sarah: Thanks for the update!',
-    unreadCount: 2
-  },
-  {
-    id: '3',
-    name: 'Anna Smith',
-    avatar: '👩',
-    lastMessage: 'See you tomorrow!',
-    unreadCount: 0
-  }
-]
-
 export function GlobalMessenger() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showChatList, setShowChatList] = useState(true)
@@ -75,18 +26,6 @@ export function GlobalMessenger() {
   const [messageText, setMessageText] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [chats, setChats] = useState<Chat[]>([])
-
-  useEffect(() => {
-    // Only load demo data in demo mode
-    if (isDemoMode()) {
-      setMessages(demoMessages)
-      setChats(demoChats)
-    } else {
-      // For real accounts, start with empty chats
-      setMessages([])
-      setChats([])
-    }
-  }, [])
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return
@@ -228,7 +167,7 @@ export function GlobalMessenger() {
                   )}
                   <p className="text-sm">{message.text}</p>
                   <div className={`text-xs mt-1 ${message.isOwn ? 'text-blue-100' : 'text-neutral-500 dark:text-neutral-400'}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.timestamp.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </div>
                 </div>
               </div>

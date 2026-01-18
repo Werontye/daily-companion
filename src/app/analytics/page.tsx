@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { ChartBarIcon, ClockIcon, CheckCircleIcon } from '@/components/icons'
-import { getTasks } from '@/lib/storage/tasks'
-import { isDemoMode } from '@/lib/demoMode'
+import { Task } from '@/types'
 
 interface DailyData {
   day: string
@@ -21,58 +20,20 @@ interface Stats {
   dailyData: DailyData[]
 }
 
-// Demo data for demo mode
-const demoStats = {
-  week: {
-    tasksCompleted: 42,
-    tasksTotal: 58,
-    pomodoroSessions: 24,
-    focusHours: 10.5,
-    productivityScore: 72,
-    dailyData: [
-      { day: 'Mon', completed: 8, total: 10 },
-      { day: 'Tue', completed: 6, total: 9 },
-      { day: 'Wed', completed: 7, total: 8 },
-      { day: 'Thu', completed: 5, total: 10 },
-      { day: 'Fri', completed: 9, total: 12 },
-      { day: 'Sat', completed: 4, total: 5 },
-      { day: 'Sun', completed: 3, total: 4 },
-    ],
-  },
-  month: {
-    tasksCompleted: 168,
-    tasksTotal: 245,
-    pomodoroSessions: 96,
-    focusHours: 42,
-    productivityScore: 69,
-    dailyData: [
-      { day: 'W1', completed: 38, total: 58 },
-      { day: 'W2', completed: 42, total: 62 },
-      { day: 'W3', completed: 45, total: 64 },
-      { day: 'W4', completed: 43, total: 61 },
-    ],
-  },
-  year: {
-    tasksCompleted: 1842,
-    tasksTotal: 2654,
-    pomodoroSessions: 1152,
-    focusHours: 480,
-    productivityScore: 71,
-    dailyData: [
-      { day: 'Jan', completed: 142, total: 218 },
-      { day: 'Feb', completed: 138, total: 205 },
-      { day: 'Mar', completed: 156, total: 228 },
-      { day: 'Apr', completed: 148, total: 215 },
-      { day: 'May', completed: 162, total: 232 },
-      { day: 'Jun', completed: 154, total: 224 },
-      { day: 'Jul', completed: 158, total: 226 },
-      { day: 'Aug', completed: 152, total: 220 },
-      { day: 'Sep', completed: 146, total: 212 },
-      { day: 'Oct', completed: 160, total: 230 },
-      { day: 'Nov', completed: 164, total: 234 },
-      { day: 'Dec', completed: 162, total: 210 },
-    ],
-  },
+// Empty initial stats
+const emptyStats: Stats = {
+  tasksCompleted: 0,
+  tasksTotal: 0,
+  pomodoroSessions: 0,
+  focusHours: 0,
+  productivityScore: 0,
+  dailyData: [],
+}
+
+const initialStats = {
+  week: { ...emptyStats },
+  month: { ...emptyStats },
+  year: { ...emptyStats },
 }
 
 interface TaskCategory {
@@ -90,11 +51,12 @@ interface PeakHour {
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week')
   const [animatedBars, setAnimatedBars] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState<{
     week: Stats
     month: Stats
     year: Stats
-  }>(demoStats)
+  }>(initialStats)
   const [taskDistribution, setTaskDistribution] = useState<TaskCategory[]>([])
   const [peakHours, setPeakHours] = useState<PeakHour[]>([])
 
@@ -106,48 +68,31 @@ export default function AnalyticsPage() {
   }, [timeRange])
 
   useEffect(() => {
-    // Calculate statistics from localStorage
-    const calculateStatistics = () => {
-      const tasks = getTasks()
+    // Load tasks from API and calculate statistics
+    const loadAndCalculateStatistics = async () => {
+      setIsLoading(true)
 
-      // If no tasks and not in demo mode, return empty stats
-      if (tasks.length === 0 && !isDemoMode()) {
-        const emptyStats = {
-          tasksCompleted: 0,
-          tasksTotal: 0,
-          pomodoroSessions: 0,
-          focusHours: 0,
-          productivityScore: 0,
-          dailyData: [] as DailyData[],
+      try {
+        const response = await fetch('/api/tasks')
+        if (!response.ok) {
+          console.error('Failed to load tasks')
+          setIsLoading(false)
+          return
         }
-        setStats({
-          week: emptyStats,
-          month: emptyStats,
-          year: emptyStats,
-        })
-        setTaskDistribution([])
-        setPeakHours([])
-        return
-      }
 
-      // If in demo mode and no tasks, use demo data
-      if (tasks.length === 0 && isDemoMode()) {
-        setStats(demoStats)
-        setTaskDistribution([
-          { name: 'Work', count: 24, color: 'bg-blue-600' },
-          { name: 'Personal', count: 12, color: 'bg-purple-600' },
-          { name: 'Health', count: 8, color: 'bg-green-600' },
-          { name: 'Learning', count: 6, color: 'bg-orange-600' },
-        ])
-        setPeakHours([
-          { time: '9-11', tasks: 18, percentage: 85 },
-          { time: '14-16', tasks: 14, percentage: 72 },
-          { time: '19-21', tasks: 10, percentage: 58 },
-        ])
-        return
-      }
+        const data = await response.json()
+        const tasks: Task[] = data.tasks || []
 
-      const now = new Date()
+        // If no tasks, show empty stats
+        if (tasks.length === 0) {
+          setStats(initialStats)
+          setTaskDistribution([])
+          setPeakHours([])
+          setIsLoading(false)
+          return
+        }
+
+        const now = new Date()
 
       // Helper function to get date range
       const getDateRange = (range: 'week' | 'month' | 'year') => {
@@ -319,9 +264,14 @@ export default function AnalyticsPage() {
         }))
 
       setPeakHours(topBlocks.length > 0 ? topBlocks : [])
+      } catch (error) {
+        console.error('Error loading analytics:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    calculateStatistics()
+    loadAndCalculateStatistics()
   }, [])
 
   const currentStats = stats[timeRange]

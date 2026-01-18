@@ -98,7 +98,7 @@ export default function HomePage() {
                 <div className="w-5 h-5 rounded-full border-2 border-blue-500" />
                 <div className="flex-1">
                   <div className="font-medium">Team Meeting</div>
-                  <div className="text-sm text-neutral-500">10:00 AM</div>
+                  <div className="text-sm text-neutral-500">10:00</div>
                 </div>
               </div>
             </div>

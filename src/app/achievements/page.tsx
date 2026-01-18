@@ -25,6 +25,7 @@ const categories = {
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentStreak, setCurrentStreak] = useState(0)
 
   useEffect(() => {
     // Load achievements from API
@@ -45,7 +46,21 @@ export default function AchievementsPage() {
       }
     }
 
+    // Load user stats for streak
+    const loadStats = async () => {
+      try {
+        const response = await fetch('/api/user/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentStreak(data.stats?.currentStreak || 0)
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error)
+      }
+    }
+
     loadAchievements()
+    loadStats()
   }, [])
 
   const unlockedCount = achievements.filter(a => a.unlocked).length
@@ -97,7 +112,7 @@ export default function AchievementsPage() {
               Current Streak
             </div>
             <div className="text-4xl font-bold text-orange-600">
-              12🔥
+              {currentStreak}{currentStreak > 0 ? '🔥' : ''}
             </div>
             <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
               Days in a row

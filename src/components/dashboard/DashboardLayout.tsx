@@ -280,9 +280,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                   {notification.message}
                                 </p>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
-                                  {notification.time.toLocaleTimeString('en-US', {
+                                  {notification.time.toLocaleTimeString('en-GB', {
                                     hour: '2-digit',
                                     minute: '2-digit',
+                                    hour12: false,
                                   })}
                                 </p>
                               </div>
