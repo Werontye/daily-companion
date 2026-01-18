@@ -5,7 +5,6 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { PlusIcon, ClockIcon, CheckCircleIcon, XIcon } from '@/components/icons'
 import { Toast } from '@/components/ui/toast/Toast'
 import { getTemplates, saveTemplates } from '@/lib/storage/templates'
-import { isDemoMode } from '@/lib/demoMode'
 
 interface TemplateItem {
   id: string
@@ -123,8 +122,8 @@ export default function TemplatesPage() {
   useEffect(() => {
     let loadedTemplates = getTemplates()
 
-    // If no templates exist and in demo mode, load demo data
-    if (loadedTemplates.length === 0 && isDemoMode()) {
+    // If no templates exist, load default templates as examples
+    if (loadedTemplates.length === 0) {
       loadedTemplates = demoTemplates
       saveTemplates(loadedTemplates)
     }
@@ -145,12 +144,51 @@ export default function TemplatesPage() {
     ? templates
     : templates.filter(t => t.category === selectedCategory)
 
-  const handleUseTemplate = (templateId: string) => {
+  const handleUseTemplate = async (templateId: string) => {
     const template = templates.find(t => t.id === templateId)
-    setToast({ message: `Template "${template?.name}" applied to today's tasks!`, type: 'success' })
-    setTemplates(templates.map(t =>
-      t.id === templateId ? { ...t, usageCount: t.usageCount + 1 } : t
-    ))
+    if (!template) return
+
+    try {
+      // Create tasks from template
+      const now = new Date()
+      let currentTime = new Date(now)
+
+      for (const task of template.tasks) {
+        const taskData = {
+          title: task.title,
+          description: `From template: ${template.name}`,
+          startTime: new Date(currentTime),
+          duration: task.duration,
+          priority: task.priority,
+          tags: [template.category],
+        }
+
+        // Add duration to get next task start time
+        if (task.duration) {
+          currentTime = new Date(currentTime.getTime() + task.duration * 60000)
+        }
+
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(taskData),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to create task')
+        }
+      }
+
+      setToast({ message: `Template "${template.name}" applied! ${template.tasks.length} tasks created.`, type: 'success' })
+      setTemplates(templates.map(t =>
+        t.id === templateId ? { ...t, usageCount: t.usageCount + 1 } : t
+      ))
+    } catch (error) {
+      console.error('Error applying template:', error)
+      setToast({ message: 'Failed to apply template. Please try again.', type: 'error' })
+    }
   }
 
   const handleCreateTemplate = () => {
