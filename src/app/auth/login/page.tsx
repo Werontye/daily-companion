@@ -29,6 +29,12 @@ export default function LoginPage() {
       })
 
       if (response.ok) {
+        // Clear any demo data from localStorage
+        localStorage.removeItem('tasks')
+        localStorage.removeItem('templates')
+        localStorage.removeItem('analytics')
+        localStorage.removeItem('achievements')
+        localStorage.removeItem('demoMode')
         router.push('/dashboard')
       } else {
         const data = await response.json()

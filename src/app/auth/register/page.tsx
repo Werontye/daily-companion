@@ -48,6 +48,12 @@ export default function RegisterPage() {
 
       if (response.ok) {
         const data = await response.json()
+        // Clear any demo data from localStorage
+        localStorage.removeItem('tasks')
+        localStorage.removeItem('templates')
+        localStorage.removeItem('analytics')
+        localStorage.removeItem('achievements')
+        localStorage.removeItem('demoMode')
         // Store user data in localStorage
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user))

@@ -44,6 +44,11 @@ export default function SharedPlansPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newPlanName, setNewPlanName] = useState('')
   const [newPlanDescription, setNewPlanDescription] = useState('')
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskAssignee, setNewTaskAssignee] = useState('')
 
   const handleSendMessage = (planId: string) => {
     if (!messageInput.trim()) return
@@ -98,6 +103,70 @@ export default function SharedPlansPage() {
     setNewPlanDescription('')
     setShowCreateModal(false)
     setSelectedPlan(newPlan)
+  }
+
+  const handleInviteMember = () => {
+    if (!inviteEmail.trim() || !selectedPlan) return
+
+    const newMember = {
+      id: `member${Date.now()}`,
+      name: inviteEmail.split('@')[0],
+      avatar: inviteEmail[0].toUpperCase(),
+      role: 'editor' as const,
+    }
+
+    const updatedPlan = {
+      ...selectedPlan,
+      members: [...selectedPlan.members, newMember],
+    }
+
+    setPlans(plans.map(plan =>
+      plan.id === selectedPlan.id ? updatedPlan : plan
+    ))
+    setSelectedPlan(updatedPlan)
+    setInviteEmail('')
+    setShowInviteModal(false)
+  }
+
+  const handleAddTask = () => {
+    if (!newTaskTitle.trim() || !selectedPlan) return
+
+    const newTask = {
+      id: `task${Date.now()}`,
+      title: newTaskTitle,
+      assignedTo: newTaskAssignee || undefined,
+      status: 'pending' as const,
+    }
+
+    const updatedPlan = {
+      ...selectedPlan,
+      tasks: [...selectedPlan.tasks, newTask],
+    }
+
+    setPlans(plans.map(plan =>
+      plan.id === selectedPlan.id ? updatedPlan : plan
+    ))
+    setSelectedPlan(updatedPlan)
+    setNewTaskTitle('')
+    setNewTaskAssignee('')
+    setShowAddTaskModal(false)
+  }
+
+  const handleToggleTaskStatus = (taskId: string) => {
+    if (!selectedPlan) return
+
+    const updatedTasks = selectedPlan.tasks.map(task =>
+      task.id === taskId
+        ? { ...task, status: task.status === 'completed' ? 'pending' as const : 'completed' as const }
+        : task
+    )
+
+    const updatedPlan = { ...selectedPlan, tasks: updatedTasks }
+
+    setPlans(plans.map(plan =>
+      plan.id === selectedPlan.id ? updatedPlan : plan
+    ))
+    setSelectedPlan(updatedPlan)
   }
 
   return (
@@ -180,7 +249,10 @@ export default function SharedPlansPage() {
                       {selectedPlan.description}
                     </p>
                   </div>
-                  <button className="btn btn-secondary btn-sm">
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="btn btn-secondary btn-sm"
+                  >
                     Invite Members
                   </button>
                 </div>
@@ -219,13 +291,18 @@ export default function SharedPlansPage() {
                       key={task.id}
                       className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
                     >
-                      <CheckCircleIcon
-                        className={`h-5 w-5 ${
-                          task.status === 'completed'
-                            ? 'text-green-600'
-                            : 'text-neutral-300 dark:text-neutral-600'
-                        }`}
-                      />
+                      <button
+                        onClick={() => handleToggleTaskStatus(task.id)}
+                        className="focus:outline-none"
+                      >
+                        <CheckCircleIcon
+                          className={`h-5 w-5 ${
+                            task.status === 'completed'
+                              ? 'text-green-600'
+                              : 'text-neutral-300 dark:text-neutral-600 hover:text-green-400'
+                          }`}
+                        />
+                      </button>
                       <span
                         className={`flex-1 ${
                           task.status === 'completed'
@@ -243,7 +320,10 @@ export default function SharedPlansPage() {
                     </div>
                   ))}
                 </div>
-                <button className="btn btn-secondary w-full mt-4">
+                <button
+                  onClick={() => setShowAddTaskModal(true)}
+                  className="btn btn-secondary w-full mt-4"
+                >
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Add Task
                 </button>
@@ -374,6 +454,111 @@ export default function SharedPlansPage() {
                   className="btn btn-primary flex-1"
                 >
                   Create Plan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Members Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+              Invite Members
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">Email Address</label>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="friend@example.com"
+                  className="input w-full"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowInviteModal(false)
+                    setInviteEmail('')
+                  }}
+                  className="btn btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleInviteMember}
+                  disabled={!inviteEmail.trim()}
+                  className="btn btn-primary flex-1"
+                >
+                  Send Invite
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Modal */}
+      {showAddTaskModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+              Add Task
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">Task Title</label>
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="Enter task title..."
+                  className="input w-full"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="label">Assign To (optional)</label>
+                <select
+                  value={newTaskAssignee}
+                  onChange={(e) => setNewTaskAssignee(e.target.value)}
+                  className="input w-full"
+                >
+                  <option value="">Unassigned</option>
+                  {selectedPlan?.members.map(member => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowAddTaskModal(false)
+                    setNewTaskTitle('')
+                    setNewTaskAssignee('')
+                  }}
+                  className="btn btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddTask}
+                  disabled={!newTaskTitle.trim()}
+                  className="btn btn-primary flex-1"
+                >
+                  Add Task
                 </button>
               </div>
             </div>

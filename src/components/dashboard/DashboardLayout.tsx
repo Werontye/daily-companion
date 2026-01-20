@@ -18,6 +18,7 @@ import {
 import { useState, useEffect } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageToggle } from '@/components/LanguageToggle'
+import { onProfileUpdate } from '@/lib/events/profileEvents'
 
 interface Notification {
   id: string
@@ -153,6 +154,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     loadUserStats()
     loadAchievements()
     loadNotifications()
+
+    // Listen for profile updates to instantly reflect changes
+    const unsubscribe = onProfileUpdate((detail) => {
+      if (detail.displayName) {
+        setUserName(detail.displayName)
+        setUserInitial(detail.displayName.charAt(0).toUpperCase())
+      }
+      if (detail.avatar) {
+        setUserAvatar(detail.avatar)
+      }
+      if (detail.avatarType) {
+        setUserAvatarType(detail.avatarType)
+      }
+    })
+
+    return () => unsubscribe()
   }, [])
 
   return (

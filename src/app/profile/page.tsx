@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { getTasks } from '@/lib/storage/tasks'
 import { getTemplates } from '@/lib/storage/templates'
 import { SearchIcon, UserIcon, XIcon } from '@/components/icons'
+import { dispatchProfileUpdate } from '@/lib/events/profileEvents'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -149,13 +150,17 @@ export default function ProfilePage() {
             userData.avatar = editedProfile.avatarUrl || editedProfile.avatar
             userData.avatarType = editedProfile.avatarType
             localStorage.setItem('user', JSON.stringify(userData))
-
-            // Trigger a storage event to update other components
-            window.dispatchEvent(new Event('storage'))
           }
         } catch (error) {
           console.error('Error updating user in localStorage:', error)
         }
+
+        // Dispatch custom event to instantly update all profile components
+        dispatchProfileUpdate({
+          displayName: editedProfile.name,
+          avatar: editedProfile.avatarUrl || editedProfile.avatar,
+          avatarType: editedProfile.avatarType,
+        })
 
         setToast({ message: 'Profile updated successfully!', type: 'success' })
       } else {

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db/mongodb'
 import Task from '@/lib/db/models/Task'
-import { getUserFromToken } from '@/lib/auth/getUserFromToken'
+import { getUserFromRequest } from '@/lib/auth/getUserFromToken'
 import mongoose from 'mongoose'
 
 // GET /api/tasks - Get all tasks for a user
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 // POST /api/tasks - Create a new task
 export async function POST(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 // PATCH /api/tasks - Update a task
 export async function PATCH(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -197,7 +197,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/tasks - Delete a task
 export async function DELETE(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db/mongodb'
 import Notification from '@/lib/db/models/Notification'
-import { getUserFromToken } from '@/lib/auth/getUserFromToken'
+import { getUserFromRequest } from '@/lib/auth/getUserFromToken'
 import mongoose from 'mongoose'
 
 /**
@@ -9,7 +9,7 @@ import mongoose from 'mongoose'
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

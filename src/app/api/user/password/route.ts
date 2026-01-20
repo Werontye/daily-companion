@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db/mongodb'
 import User from '@/lib/db/models/User'
-import { getUserFromToken } from '@/lib/auth/getUserFromToken'
+import { getUserFromRequest } from '@/lib/auth/getUserFromToken'
 import bcrypt from 'bcryptjs'
 
 /**
@@ -9,7 +9,7 @@ import bcrypt from 'bcryptjs'
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const user = getUserFromToken(request)
+    const user = await getUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
