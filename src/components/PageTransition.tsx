@@ -20,7 +20,7 @@ const pageVariants = {
     filter: 'blur(0px)',
     transition: {
       duration: 0.35,
-      ease: [0.16, 1, 0.3, 1], // Subtle easing
+      ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
     },
   },
   exit: {
@@ -29,7 +29,7 @@ const pageVariants = {
     filter: 'blur(4px)',
     transition: {
       duration: 0.25,
-      ease: [0.16, 1, 0.3, 1],
+      ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
     },
   },
 }
