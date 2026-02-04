@@ -42,7 +42,7 @@ export async function GET(
       .populate('invitedUser', 'displayName email avatar avatarType')
       .populate('invitedBy', 'displayName')
 
-    const transformedInvitations = invitations.map((inv) => ({
+    const transformedInvitations = invitations.map((inv: any) => ({
       id: inv._id.toString(),
       invitedUser: {
         id: inv.invitedUser._id.toString(),

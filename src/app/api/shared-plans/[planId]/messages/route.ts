@@ -47,7 +47,7 @@ export async function GET(
       .limit(limit)
       .populate('sender', 'displayName avatar avatarType')
 
-    const transformedMessages = messages.map((m) => ({
+    const transformedMessages = messages.map((m: any) => ({
       id: m._id.toString(),
       content: m.content,
       sender: {
@@ -116,17 +116,18 @@ export async function POST(
 
     await message.populate('sender', 'displayName avatar avatarType')
 
+    const populatedMessage = message as any
     return NextResponse.json({
       message: {
-        id: message._id.toString(),
-        content: message.content,
+        id: populatedMessage._id.toString(),
+        content: populatedMessage.content,
         sender: {
-          id: message.sender._id.toString(),
-          displayName: message.sender.displayName,
-          avatar: message.sender.avatar,
-          avatarType: message.sender.avatarType,
+          id: populatedMessage.sender._id.toString(),
+          displayName: populatedMessage.sender.displayName,
+          avatar: populatedMessage.sender.avatar,
+          avatarType: populatedMessage.sender.avatarType,
         },
-        createdAt: message.createdAt,
+        createdAt: populatedMessage.createdAt,
       },
     })
   } catch (error) {

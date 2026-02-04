@@ -23,13 +23,10 @@ export async function GET(request: NextRequest) {
       .populate('planId', 'name description')
       .populate('invitedBy', 'displayName avatar avatarType')
 
-    const transformedInvitations = invitations.map((inv) => ({
+    const transformedInvitations = invitations.map((inv: any) => ({
       id: inv._id.toString(),
-      plan: {
-        id: inv.planId._id.toString(),
-        name: inv.planId.name,
-        description: inv.planId.description,
-      },
+      planId: inv.planId._id.toString(),
+      planName: inv.planId.name,
       invitedBy: {
         id: inv.invitedBy._id.toString(),
         displayName: inv.invitedBy.displayName,
@@ -84,7 +81,7 @@ export async function PATCH(request: NextRequest) {
 
     if (action === 'accept') {
       // Add user to plan members
-      const plan = await SharedPlan.findById(invitation.planId)
+      const plan = await SharedPlan.findById(invitation.planId) as any
       if (!plan) {
         return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
       }

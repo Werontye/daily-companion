@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
       .sort({ updatedAt: -1 })
 
     // Transform plans
-    const transformedPlans = plans.map((plan) => {
+    const transformedPlans = plans.map((plan: any) => {
       const userRole = plan.owner._id.toString() === user.userId
         ? 'owner'
-        : plan.members.find((m) => m.userId._id.toString() === user.userId)?.role || 'viewer'
+        : plan.members.find((m: any) => m.userId._id.toString() === user.userId)?.role || 'viewer'
 
       return {
         id: plan._id.toString(),
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           avatar: plan.owner.avatar,
           avatarType: plan.owner.avatarType,
         },
-        members: plan.members.map((m) => ({
+        members: plan.members.map((m: any) => ({
           id: m.userId._id.toString(),
           displayName: m.userId.displayName,
           avatar: m.userId.avatar,
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           joinedAt: m.joinedAt,
         })),
         taskCount: plan.tasks.length,
-        completedTaskCount: plan.tasks.filter((t) => t.status === 'completed').length,
+        completedTaskCount: plan.tasks.filter((t: any) => t.status === 'completed').length,
         userRole,
         createdAt: plan.createdAt,
         updatedAt: plan.updatedAt,

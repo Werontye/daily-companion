@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }).populate('recipient', 'displayName email avatar avatarType')
 
     // Transform friends data
-    const friends = acceptedFriendships.map((f) => {
+    const friends = acceptedFriendships.map((f: any) => {
       const friend = f.requester._id.toString() === user.userId ? f.recipient : f.requester
       return {
         friendshipId: f._id.toString(),
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform pending requests
-    const pending = pendingRequests.map((f) => ({
+    const pending = pendingRequests.map((f: any) => ({
       friendshipId: f._id.toString(),
       id: f.requester._id.toString(),
       displayName: f.requester.displayName,
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Transform sent requests
-    const sent = sentRequests.map((f) => ({
+    const sent = sentRequests.map((f: any) => ({
       friendshipId: f._id.toString(),
       id: f.recipient._id.toString(),
       displayName: f.recipient.displayName,

@@ -41,7 +41,7 @@ export async function GET(
       .populate('sender', 'displayName avatar avatarType')
 
     // Transform messages
-    const transformedMessages = messages.map((m) => ({
+    const transformedMessages = messages.map((m: any) => ({
       id: m._id.toString(),
       content: m.content,
       sender: {

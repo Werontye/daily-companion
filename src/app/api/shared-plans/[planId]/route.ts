@@ -30,31 +30,33 @@ export async function GET(
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
 
+    const populatedPlan = plan as any
+
     // Check if user is member
-    const isMember = plan.owner._id.toString() === user.userId ||
-      plan.members.some((m) => m.userId._id.toString() === user.userId)
+    const isMember = populatedPlan.owner._id.toString() === user.userId ||
+      populatedPlan.members.some((m: any) => m.userId._id.toString() === user.userId)
 
     if (!isMember) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
-    const userRole = plan.owner._id.toString() === user.userId
+    const userRole = populatedPlan.owner._id.toString() === user.userId
       ? 'owner'
-      : plan.members.find((m) => m.userId._id.toString() === user.userId)?.role || 'viewer'
+      : populatedPlan.members.find((m: any) => m.userId._id.toString() === user.userId)?.role || 'viewer'
 
     return NextResponse.json({
       plan: {
-        id: plan._id.toString(),
-        name: plan.name,
-        description: plan.description,
+        id: populatedPlan._id.toString(),
+        name: populatedPlan.name,
+        description: populatedPlan.description,
         owner: {
-          id: plan.owner._id.toString(),
-          displayName: plan.owner.displayName,
-          avatar: plan.owner.avatar,
-          avatarType: plan.owner.avatarType,
-          email: plan.owner.email,
+          id: populatedPlan.owner._id.toString(),
+          displayName: populatedPlan.owner.displayName,
+          avatar: populatedPlan.owner.avatar,
+          avatarType: populatedPlan.owner.avatarType,
+          email: populatedPlan.owner.email,
         },
-        members: plan.members.map((m) => ({
+        members: populatedPlan.members.map((m: any) => ({
           id: m.userId._id.toString(),
           displayName: m.userId.displayName,
           avatar: m.userId.avatar,
@@ -63,7 +65,7 @@ export async function GET(
           role: m.role,
           joinedAt: m.joinedAt,
         })),
-        tasks: plan.tasks.map((t) => ({
+        tasks: populatedPlan.tasks.map((t: any) => ({
           id: t._id.toString(),
           title: t.title,
           description: t.description,
@@ -84,8 +86,8 @@ export async function GET(
           completedAt: t.completedAt,
         })),
         userRole,
-        createdAt: plan.createdAt,
-        updatedAt: plan.updatedAt,
+        createdAt: populatedPlan.createdAt,
+        updatedAt: populatedPlan.updatedAt,
       },
     })
   } catch (error) {
