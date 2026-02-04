@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PlusIcon } from '@/components/icons'
+import { PlusIcon, CheckCircleIcon, ClockIcon, TrophyIcon } from '@/components/icons'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { TaskList } from '@/components/dashboard/TaskList'
 import { Timeline } from '@/components/dashboard/Timeline'
 import { QuickAddModal } from '@/components/dashboard/QuickAddModal'
 import { Task } from '@/types'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { motion, AnimatePresence } from 'framer-motion'
+import { staggerContainer, staggerItem, fadeUp, numberCountVariants } from '@/lib/motion'
 
 export default function DashboardPage() {
   const { t } = useLanguage()
@@ -15,6 +17,8 @@ export default function DashboardPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isLoading, setIsLoading] = useState(true)
+  const [userName, setUserName] = useState('User')
+  const [streak, setStreak] = useState(0)
 
   // Load tasks from API
   const loadTasks = async () => {
@@ -31,6 +35,28 @@ export default function DashboardPage() {
       console.error('Error loading tasks:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Load user data
+  const loadUserData = async () => {
+    try {
+      const response = await fetch('/api/auth')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.user?.displayName) {
+          setUserName(data.user.displayName)
+        }
+      }
+
+      // Load stats for streak
+      const statsResponse = await fetch('/api/user/stats')
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        setStreak(statsData.stats?.currentStreak || 0)
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error)
     }
   }
 
@@ -57,6 +83,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadTasks()
+    loadUserData()
   }, [])
 
   const handleAddTask = async (newTask: Partial<Task>) => {
@@ -86,7 +113,6 @@ export default function DashboardPage() {
       })
 
       if (response.ok) {
-        const data = await response.json()
         // Reload tasks to get updated list
         await loadTasks()
         // Check for new achievements
@@ -158,99 +184,311 @@ export default function DashboardPage() {
   const totalPomodoros = tasks.reduce((sum, task) =>
     sum + (task.pomodoroSessions?.filter(s => s.completed).length || 0), 0
   )
+  const progressPercent = todayTasks.length > 0 ? Math.round((completedToday / todayTasks.length) * 100) : 0
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
 
   return (
     <DashboardLayout>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto py-8">
-        {/* Left Column - Timeline (Desktop only) */}
-        <div className="hidden lg:block">
-          <div className="sticky top-8">
-            <Timeline
-              tasks={todayTasks}
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
-            />
-          </div>
-        </div>
-
-        {/* Center Column - Task List */}
-        <div className="lg:col-span-2">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-                {t.dashboard.title}
-              </h1>
-              <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                {selectedDate.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
+      <div className="max-w-6xl mx-auto">
+        {/* Hero Section with Greeting */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-8"
+        >
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 via-primary-700 to-accent-600 p-8 md:p-10">
+            {/* Background Decorations */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
+              <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-accent-500/20 blur-3xl" />
+              <motion.div
+                animate={{
+                  y: [0, -10, 0],
+                  rotate: [0, 5, 0],
+                }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-10 right-10 w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm"
+              />
+              <motion.div
+                animate={{
+                  y: [0, 10, 0],
+                  rotate: [0, -5, 0],
+                }}
+                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute bottom-10 right-32 w-12 h-12 rounded-xl bg-white/5 backdrop-blur-sm"
+              />
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="btn btn-primary hidden lg:flex items-center gap-2"
-            >
-              <PlusIcon className="h-5 w-5" />
-              {t.dashboard.addTask}
-            </button>
-          </div>
 
-          <TaskList
-            tasks={todayTasks}
-            onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
-          />
-
-          {todayTasks.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-neutral-500 dark:text-neutral-400 mb-4">
-                {t.dashboard.noTasks}
-              </p>
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="btn btn-primary"
+            {/* Content */}
+            <div className="relative z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center gap-2 mb-2"
               >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                {t.dashboard.createTask}
-              </button>
-            </div>
-          )}
+                <span className="text-white/80 text-sm font-medium">
+                  {selectedDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </span>
+                {streak > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-xs font-medium">
+                    {streak} day streak
+                  </span>
+                )}
+              </motion.div>
 
-          {/* Quick Stats - Inline at bottom */}
-          {todayTasks.length > 0 && (
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Progress</div>
-                <div className="text-3xl font-bold text-blue-600">{completedToday}/{todayTasks.length}</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  {todayTasks.length > 0 ? Math.round((completedToday / todayTasks.length) * 100) : 0}% complete
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-3xl md:text-4xl font-bold text-white mb-2"
+              >
+                {getGreeting()}, {userName.split(' ')[0]}!
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-white/70 text-lg mb-6"
+              >
+                {todayTasks.length === 0
+                  ? "You have a clear schedule today. Ready to add some tasks?"
+                  : completedToday === todayTasks.length
+                  ? "Amazing! You've completed all your tasks!"
+                  : `You have ${todayTasks.length - completedToday} task${todayTasks.length - completedToday === 1 ? '' : 's'} remaining today.`
+                }
+              </motion.p>
+
+              {/* Progress Bar */}
+              {todayTasks.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <div className="flex items-center justify-between text-sm text-white/70 mb-2">
+                    <span>Daily Progress</span>
+                    <span>{completedToday} of {todayTasks.length} completed</span>
+                  </div>
+                  <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ delay: 0.7, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                      className="h-full bg-white rounded-full"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+        >
+          <motion.div
+            variants={staggerItem}
+            whileHover={{ y: -4, boxShadow: '0 10px 40px -10px rgba(79, 70, 229, 0.3)' }}
+            className="card bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 border border-primary-200 dark:border-primary-800/50"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-600/30">
+                <CheckCircleIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 mb-0.5">Progress</div>
+                <motion.div
+                  variants={numberCountVariants}
+                  className="text-3xl font-bold text-primary-600"
+                >
+                  {completedToday}/{todayTasks.length}
+                </motion.div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  {progressPercent}% complete
                 </div>
               </div>
-              <div className="card bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border border-orange-200 dark:border-orange-800">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Pomodoros</div>
-                <div className="text-3xl font-bold text-orange-600">{totalPomodoros}</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">sessions completed</div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            variants={staggerItem}
+            whileHover={{ y: -4, boxShadow: '0 10px 40px -10px rgba(245, 158, 11, 0.3)' }}
+            className="card bg-gradient-to-br from-warning-50 to-orange-100 dark:from-warning/20 dark:to-orange-800/20 border border-warning-200 dark:border-warning/30"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-warning flex items-center justify-center shadow-lg shadow-warning/30">
+                <ClockIcon className="w-6 h-6 text-white" />
               </div>
-              <div className="card bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">Streak</div>
-                <div className="text-3xl font-bold text-green-600">3🔥</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">days in a row</div>
+              <div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 mb-0.5">Focus Time</div>
+                <motion.div
+                  variants={numberCountVariants}
+                  className="text-3xl font-bold text-warning-600 dark:text-warning"
+                >
+                  {totalPomodoros}
+                </motion.div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  pomodoro sessions
+                </div>
               </div>
             </div>
-          )}
+          </motion.div>
+
+          <motion.div
+            variants={staggerItem}
+            whileHover={{ y: -4, boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.3)' }}
+            className="card bg-gradient-to-br from-success-50 to-emerald-100 dark:from-success/20 dark:to-emerald-800/20 border border-success-200 dark:border-success/30"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-success flex items-center justify-center shadow-lg shadow-success/30">
+                <TrophyIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-slate-600 dark:text-slate-400 mb-0.5">Streak</div>
+                <motion.div
+                  variants={numberCountVariants}
+                  className="text-3xl font-bold text-success-600 dark:text-success"
+                >
+                  {streak}
+                </motion.div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  days in a row
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Timeline (Desktop only) */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="hidden lg:block"
+          >
+            <div className="sticky top-24">
+              <Timeline
+                tasks={todayTasks}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
+            </div>
+          </motion.div>
+
+          {/* Center Column - Task List */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="lg:col-span-2"
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {t.dashboard.title}
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+                  Manage your tasks for today
+                </p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsAddModalOpen(true)}
+                className="btn-primary hidden lg:flex items-center gap-2"
+              >
+                <PlusIcon className="h-5 w-5" />
+                {t.dashboard.addTask}
+              </motion.button>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="skeleton h-24 rounded-xl" />
+                ))}
+              </div>
+            ) : (
+              <>
+                <TaskList
+                  tasks={todayTasks}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                />
+
+                <AnimatePresence>
+                  {todayTasks.length === 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="text-center py-16"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/30 dark:to-accent-900/30 flex items-center justify-center"
+                      >
+                        <CheckCircleIcon className="w-10 h-10 text-primary-600" />
+                      </motion.div>
+                      <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                        No tasks for today
+                      </h3>
+                      <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-sm mx-auto">
+                        {t.dashboard.noTasks}
+                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="btn-primary inline-flex items-center gap-2"
+                      >
+                        <PlusIcon className="h-5 w-5" />
+                        {t.dashboard.createTask}
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+          </motion.div>
         </div>
       </div>
 
       {/* Floating Action Button (Mobile only) */}
-      <button
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.5, type: 'spring', stiffness: 200, damping: 15 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
         onClick={() => setIsAddModalOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 active:bg-blue-800 flex items-center justify-center transition-all z-40"
+        className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-primary-600 to-accent-500 text-white rounded-2xl shadow-lg shadow-primary-600/40 hover:shadow-xl hover:shadow-primary-600/50 flex items-center justify-center transition-shadow z-40"
         aria-label="Add task"
       >
         <PlusIcon className="h-6 w-6" />
-      </button>
+      </motion.button>
 
       {/* Quick Add Modal */}
       <QuickAddModal
