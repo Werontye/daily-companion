@@ -12,12 +12,12 @@ function generateCode(): string {
 }
 
 // Send verification email via Resend
-async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
+async function sendVerificationEmail(email: string, code: string): Promise<{ success: boolean; error?: string }> {
   try {
     // In development without API key, just log
     if (!process.env.RESEND_API_KEY) {
       console.log(`[DEV MODE] Verification code for ${email}: ${code}`)
-      return true
+      return { success: true }
     }
 
     const { error } = await resend.emails.send({
@@ -92,14 +92,14 @@ async function sendVerificationEmail(email: string, code: string): Promise<boole
     })
 
     if (error) {
-      console.error('Resend error:', error)
-      return false
+      console.error('Resend error:', JSON.stringify(error, null, 2))
+      return { success: false, error: error.message || 'Unknown Resend error' }
     }
 
-    return true
-  } catch (error) {
-    console.error('Failed to send verification email:', error)
-    return false
+    return { success: true }
+  } catch (error: any) {
+    console.error('Failed to send verification email:', error?.message || error)
+    return { success: false, error: error?.message || 'Failed to send email' }
   }
 }
 
@@ -143,10 +143,11 @@ export async function POST(request: NextRequest) {
     await verification.save()
 
     // Send email
-    const sent = await sendVerificationEmail(normalizedEmail, code)
-    if (!sent) {
+    const result = await sendVerificationEmail(normalizedEmail, code)
+    if (!result.success) {
+      console.error('Email send failed:', result.error)
       return NextResponse.json(
-        { error: 'Failed to send verification email' },
+        { error: result.error || 'Failed to send verification email' },
         { status: 500 }
       )
     }
