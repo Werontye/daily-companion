@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // Transform friends data
     const friends = acceptedFriendships.map((f: any) => {
-      const friend = f.requester._id.toString() === user.userId ? f.recipient : f.requester
+      const friend: any = f.requester._id.toString() === user.userId ? f.recipient : f.requester
       return {
         friendshipId: f._id.toString(),
         id: friend._id.toString(),
