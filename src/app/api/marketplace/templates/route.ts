@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/db/mongoose'
+import connectToDatabase from '@/lib/db/mongodb'
 import { PublicTemplate } from '@/lib/db/models/PublicTemplate'
-import { User } from '@/lib/db/models/User'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/auth'
+import User from '@/lib/db/models/User'
+import { auth } from '@/auth'
 
 // GET - Fetch public templates (marketplace)
 export async function GET(request: NextRequest) {
   try {
-    await connectDB()
+    await connectToDatabase()
 
     const searchParams = request.nextUrl.searchParams
     const category = searchParams.get('category')
@@ -114,12 +113,12 @@ export async function GET(request: NextRequest) {
 // POST - Publish a template to marketplace (requires auth)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    await connectDB()
+    await connectToDatabase()
 
     const user = await User.findOne({ email: session.user.email })
     if (!user) {

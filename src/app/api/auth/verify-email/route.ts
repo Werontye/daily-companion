@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import { connectDB } from '@/lib/db/mongoose'
-import { User } from '@/lib/db/models/User'
+import connectToDatabase from '@/lib/db/mongodb'
+import User from '@/lib/db/models/User'
 import { VerificationCode } from '@/lib/db/models/VerificationCode'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -106,7 +106,7 @@ async function sendVerificationEmail(email: string, code: string): Promise<boole
 // POST - Send verification code
 export async function POST(request: NextRequest) {
   try {
-    await connectDB()
+    await connectToDatabase()
 
     const body = await request.json()
     const { email, action } = body
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Verify code
 export async function PATCH(request: NextRequest) {
   try {
-    await connectDB()
+    await connectToDatabase()
 
     const body = await request.json()
     const { email, code } = body

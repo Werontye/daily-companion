@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/db/mongoose'
+import connectToDatabase from '@/lib/db/mongodb'
 import { PublicTemplate } from '@/lib/db/models/PublicTemplate'
-import { User } from '@/lib/db/models/User'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/auth'
+import User from '@/lib/db/models/User'
+import { auth } from '@/auth'
 
 // GET - Get single template details
 export async function GET(
@@ -12,7 +11,7 @@ export async function GET(
 ) {
   try {
     const { templateId } = await params
-    await connectDB()
+    await connectToDatabase()
 
     const template = await PublicTemplate.findById(templateId)
       .populate('author', 'displayName avatar avatarType')
@@ -24,7 +23,7 @@ export async function GET(
 
     // Check if current user has liked this template
     let isLiked = false
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (session?.user) {
       const user = await User.findOne({ email: session.user.email })
       if (user) {
@@ -75,13 +74,13 @@ export async function PATCH(
   { params }: { params: Promise<{ templateId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { templateId } = await params
-    await connectDB()
+    await connectToDatabase()
 
     const user = await User.findOne({ email: session.user.email })
     if (!user) {
@@ -163,13 +162,13 @@ export async function DELETE(
   { params }: { params: Promise<{ templateId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { templateId } = await params
-    await connectDB()
+    await connectToDatabase()
 
     const user = await User.findOne({ email: session.user.email })
     if (!user) {
