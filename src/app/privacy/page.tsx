@@ -224,7 +224,7 @@ export default function PrivacyPolicyPage() {
                               <span className="w-1.5 h-1.5 rounded-full bg-primary-600 dark:bg-primary-400" />
                             </span>
                             <span>
-                              {item.title && <strong className="text-slate-800 dark:text-slate-200">{item.title}: </strong>}
+                              {'title' in item && item.title && <strong className="text-slate-800 dark:text-slate-200">{item.title}: </strong>}
                               {item.desc}
                             </span>
                           </motion.li>
