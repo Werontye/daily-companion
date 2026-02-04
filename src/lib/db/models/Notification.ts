@@ -4,9 +4,10 @@ export interface INotification extends Document {
   userId: Types.ObjectId
   title: string
   message: string
-  type: 'achievement' | 'task' | 'system'
+  type: 'achievement' | 'task' | 'system' | 'friend_request'
   read: boolean
   relatedId?: string
+  actionTaken?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -31,7 +32,7 @@ const notificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['achievement', 'task', 'system'],
+      enum: ['achievement', 'task', 'system', 'friend_request'],
       required: true,
     },
     read: {
@@ -41,6 +42,10 @@ const notificationSchema = new Schema<INotification>(
     },
     relatedId: {
       type: String,
+    },
+    actionTaken: {
+      type: Boolean,
+      default: false,
     },
   },
   {

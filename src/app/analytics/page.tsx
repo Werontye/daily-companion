@@ -620,7 +620,7 @@ export default function AnalyticsPage() {
           </h3>
           <ul className="space-y-3">
             {[
-              'Your most productive time is between 9-11 AM. Schedule important tasks during this window.',
+              'Your most productive time is between 09:00-11:00. Schedule important tasks during this window.',
               `You completed ${completionRate}% of tasks this ${timeRange}. ${completionRate >= 80 ? 'Excellent work!' : completionRate >= 50 ? 'Keep it up!' : 'Try to improve this pace.'}`,
               'Consider taking more breaks - your productivity increases by 15% after a proper rest.',
             ].map((insight, idx) => (

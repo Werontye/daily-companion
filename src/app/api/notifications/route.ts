@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
         read: notif.read,
         time: notif.createdAt,
         relatedId: notif.relatedId,
+        actionTaken: notif.actionTaken,
       }))
     })
   } catch (error) {

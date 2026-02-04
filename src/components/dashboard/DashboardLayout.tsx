@@ -27,7 +27,9 @@ interface Notification {
   message: string
   time: Date
   read: boolean
-  type: 'achievement' | 'task' | 'system'
+  type: 'achievement' | 'task' | 'system' | 'friend_request'
+  relatedId?: string
+  actionTaken?: boolean
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -336,7 +338,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                               <motion.div
                                 key={notification.id}
                                 variants={staggerItem}
-                                className={`p-4 border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
+                                className={`p-4 border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${
                                   !notification.read ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''
                                 }`}
                               >
@@ -346,10 +348,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                       ? 'bg-warning-100 dark:bg-warning/20'
                                       : notification.type === 'task'
                                       ? 'bg-success-100 dark:bg-success/20'
+                                      : notification.type === 'friend_request'
+                                      ? 'bg-accent-100 dark:bg-accent-900/30'
                                       : 'bg-primary-100 dark:bg-primary-900/30'
                                   }`}>
                                     {notification.type === 'achievement' && '🏆'}
                                     {notification.type === 'task' && '✓'}
+                                    {notification.type === 'friend_request' && '👥'}
                                     {notification.type === 'system' && '📢'}
                                   </div>
                                   <div className="flex-1 min-w-0">
@@ -375,6 +380,69 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                                         hour12: false,
                                       })}
                                     </p>
+                                    {/* Accept/Decline buttons for friend requests */}
+                                    {notification.type === 'friend_request' && !notification.actionTaken && notification.relatedId && (
+                                      <div className="flex gap-2 mt-3">
+                                        <motion.button
+                                          whileHover={{ scale: 1.02 }}
+                                          whileTap={{ scale: 0.98 }}
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            try {
+                                              const response = await fetch('/api/friends', {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  friendshipId: notification.relatedId,
+                                                  action: 'accept'
+                                                }),
+                                              })
+                                              if (response.ok) {
+                                                setNotifications(notifications.map(n =>
+                                                  n.id === notification.id
+                                                    ? { ...n, actionTaken: true, read: true }
+                                                    : n
+                                                ))
+                                              }
+                                            } catch (error) {
+                                              console.error('Error accepting friend request:', error)
+                                            }
+                                          }}
+                                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-success-100 dark:bg-success/20 text-success-700 dark:text-success hover:bg-success-200 dark:hover:bg-success/30 transition-colors"
+                                        >
+                                          Accept
+                                        </motion.button>
+                                        <motion.button
+                                          whileHover={{ scale: 1.02 }}
+                                          whileTap={{ scale: 0.98 }}
+                                          onClick={async (e) => {
+                                            e.stopPropagation()
+                                            try {
+                                              const response = await fetch('/api/friends', {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  friendshipId: notification.relatedId,
+                                                  action: 'decline'
+                                                }),
+                                              })
+                                              if (response.ok) {
+                                                setNotifications(notifications.map(n =>
+                                                  n.id === notification.id
+                                                    ? { ...n, actionTaken: true, read: true }
+                                                    : n
+                                                ))
+                                              }
+                                            } catch (error) {
+                                              console.error('Error declining friend request:', error)
+                                            }
+                                          }}
+                                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                        >
+                                          Decline
+                                        </motion.button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </motion.div>
@@ -679,27 +747,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowLogoutDialog(false)}
-                  className="btn-secondary"
+                  className="px-5 py-2.5 rounded-xl font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all border border-slate-200 dark:border-slate-600"
                 >
                   Cancel
                 </motion.button>
-                <Link
-                  href="/"
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     // Clear user session data from localStorage
                     localStorage.removeItem('user')
                     localStorage.removeItem('tasks')
                     localStorage.removeItem('achievements')
+                    window.location.href = '/'
                   }}
+                  className="px-5 py-2.5 rounded-xl font-medium bg-danger hover:bg-red-700 text-white transition-all shadow-md hover:shadow-lg"
                 >
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn-danger"
-                  >
-                    Exit
-                  </motion.button>
-                </Link>
+                  Exit
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>

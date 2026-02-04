@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   CheckCircleIcon,
@@ -10,20 +9,13 @@ import {
   ClockIcon,
   ChartBarIcon,
   UserGroupIcon,
-  TrophyIcon
+  TrophyIcon,
+  TemplateIcon
 } from '@/components/icons'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { resetToDemo } from '@/lib/demoMode'
-import { staggerContainer, staggerItem, fadeUp, springPop } from '@/lib/motion'
+import { staggerContainer, staggerItem } from '@/lib/motion'
 
 export default function HomePage() {
-  const router = useRouter()
-
-  const handleTryDemo = () => {
-    resetToDemo()
-    router.push('/dashboard')
-  }
-
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Background Gradient Orbs */}
@@ -118,12 +110,13 @@ export default function HomePage() {
               >
                 Get started free
               </Link>
-              <button
-                onClick={handleTryDemo}
-                className="btn btn-secondary btn-lg w-full sm:w-auto"
+              <Link
+                href="/marketplace"
+                className="btn btn-secondary btn-lg w-full sm:w-auto flex items-center gap-2"
               >
-                Try Live Demo
-              </button>
+                <TemplateIcon className="w-5 h-5" />
+                Browse Templates
+              </Link>
             </motion.div>
           </div>
 

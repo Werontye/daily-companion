@@ -142,8 +142,9 @@ export async function POST(request: NextRequest) {
       userId: recipientId,
       title: 'New Friend Request',
       message: `${sender?.displayName || 'Someone'} sent you a friend request`,
-      type: 'system',
+      type: 'friend_request',
       relatedId: friendship._id.toString(),
+      actionTaken: false,
     })
 
     return NextResponse.json({
@@ -194,6 +195,16 @@ export async function PATCH(request: NextRequest) {
 
     friendship.status = action === 'accept' ? 'accepted' : 'declined'
     await friendship.save()
+
+    // Mark the friend request notification as action taken
+    await Notification.updateMany(
+      {
+        userId: user.userId,
+        type: 'friend_request',
+        relatedId: friendshipId,
+      },
+      { actionTaken: true, read: true }
+    )
 
     // Create notification for requester if accepted
     if (action === 'accept') {

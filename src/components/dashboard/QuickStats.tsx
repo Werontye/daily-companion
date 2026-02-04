@@ -124,7 +124,7 @@ export function QuickStats({
                 Early Bird
               </div>
               <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                5 tasks before 9 AM
+                5 tasks before 09:00
               </div>
             </div>
           </div>

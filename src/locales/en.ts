@@ -78,7 +78,7 @@ export const en = {
     dayStreak: 'Day Streak',
     keepItUp: 'Keep it up!',
     earlyBird: 'Early Bird',
-    tasksBeforeNine: 'tasks before 9 AM',
+    tasksBeforeNine: 'tasks before 09:00',
   },
 
   // Common
