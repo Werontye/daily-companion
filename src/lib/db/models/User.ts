@@ -8,8 +8,7 @@ export interface IUser extends Document {
   avatar?: string
   avatarType: 'initial' | 'photo'
   bio?: string
-  provider?: 'credentials' | 'google' | 'github'
-  providerId?: string
+  provider?: 'credentials'
   createdAt: Date
   updatedAt: Date
   lastLogin?: Date
@@ -53,12 +52,8 @@ const userSchema = new Schema<IUser>(
     },
     provider: {
       type: String,
-      enum: ['credentials', 'google', 'github'],
+      enum: ['credentials'],
       default: 'credentials',
-    },
-    providerId: {
-      type: String,
-      sparse: true, // Allow null but must be unique if present
     },
     lastLogin: {
       type: Date,
@@ -73,8 +68,6 @@ const userSchema = new Schema<IUser>(
   }
 )
 
-// Index for OAuth lookups
-userSchema.index({ provider: 1, providerId: 1 })
 
 // Hash password before saving
 userSchema.pre('save', async function () {

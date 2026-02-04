@@ -45,7 +45,7 @@ export default function ProfilePage() {
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
 
-  // Fetch user session on mount
+  // Fetch user session and friends on mount
   useEffect(() => {
     const fetchUserSession = async () => {
       try {
@@ -72,12 +72,41 @@ export default function ProfilePage() {
       }
     }
 
+    const fetchFriends = async () => {
+      try {
+        const response = await fetch('/api/friends')
+        if (response.ok) {
+          const data = await response.json()
+          setFriends(data.friends.map((f: any) => ({
+            id: f.id,
+            name: f.displayName,
+            email: f.email,
+            avatar: f.avatarType === 'photo' ? null : (f.avatar || f.displayName?.[0]?.toUpperCase() || 'U'),
+            avatarUrl: f.avatarType === 'photo' ? f.avatar : null,
+            avatarType: f.avatarType,
+          })))
+          setFriendRequests(data.pendingReceived.map((r: any) => ({
+            id: r.id,
+            friendshipId: r.friendshipId,
+            name: r.displayName,
+            email: r.email,
+            avatar: r.avatarType === 'photo' ? null : (r.avatar || r.displayName?.[0]?.toUpperCase() || 'U'),
+            avatarUrl: r.avatarType === 'photo' ? r.avatar : null,
+            avatarType: r.avatarType,
+          })))
+        }
+      } catch (error) {
+        console.error('Failed to fetch friends:', error)
+      }
+    }
+
     fetchUserSession()
+    fetchFriends()
   }, [])
 
-  // Calculate statistics from localStorage
+  // Calculate statistics from localStorage and API
   useEffect(() => {
-    const calculateStatistics = () => {
+    const calculateStatistics = async () => {
       const tasks = getTasks()
       const templates = getTemplates()
 
@@ -104,11 +133,23 @@ export default function ProfilePage() {
         }
       }
 
+      // Fetch shared plans count
+      let sharedPlansCount = 0
+      try {
+        const response = await fetch('/api/shared-plans')
+        if (response.ok) {
+          const data = await response.json()
+          sharedPlansCount = data.plans?.length || 0
+        }
+      } catch (error) {
+        console.error('Failed to fetch shared plans count:', error)
+      }
+
       setStatistics({
         tasksCompleted: completedTasks,
         dayStreak: streak,
         templatesCreated: templates.length,
-        sharedPlans: 0, // Shared plans aren't implemented yet
+        sharedPlans: sharedPlansCount,
       })
     }
 
@@ -255,54 +296,118 @@ export default function ProfilePage() {
     }
 
     setIsSearching(true)
-    // Simulate API call - in real app this would search actual users
-    setTimeout(() => {
-      // Mock search results
-      const mockResults = [
-        {
-          id: '2',
-          name: 'John Doe',
-          email: 'john@example.com',
-          avatar: 'J',
-          isFriend: false,
-          requestPending: false,
-        },
-        {
-          id: '3',
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          avatar: 'J',
-          isFriend: false,
-          requestPending: false,
-        },
-      ].filter(user =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      setSearchResults(mockResults)
+    try {
+      const response = await fetch(`/api/friends/search?q=${encodeURIComponent(searchQuery)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSearchResults(data.users.map((user: any) => ({
+          id: user.id,
+          name: user.displayName,
+          email: user.email,
+          avatar: user.avatarType === 'photo' ? null : (user.avatar || user.displayName?.[0]?.toUpperCase() || 'U'),
+          avatarUrl: user.avatarType === 'photo' ? user.avatar : null,
+          avatarType: user.avatarType,
+          isFriend: user.isFriend,
+          requestPending: user.requestPending,
+          requestReceived: user.requestReceived,
+        })))
+      }
+    } catch (error) {
+      console.error('Search failed:', error)
+    } finally {
       setIsSearching(false)
-    }, 500)
-  }
-
-  const handleSendFriendRequest = (userId: string) => {
-    setSearchResults(searchResults.map(user =>
-      user.id === userId ? { ...user, requestPending: true } : user
-    ))
-    setToast({ message: 'Friend request sent!', type: 'success' })
-  }
-
-  const handleAcceptFriendRequest = (userId: string) => {
-    const request = friendRequests.find(r => r.id === userId)
-    if (request) {
-      setFriends([...friends, { ...request, isFriend: true }])
-      setFriendRequests(friendRequests.filter(r => r.id !== userId))
-      setToast({ message: 'Friend request accepted!', type: 'success' })
     }
   }
 
-  const handleRemoveFriend = (userId: string) => {
-    setFriends(friends.filter(f => f.id !== userId))
-    setToast({ message: 'Friend removed', type: 'success' })
+  const handleSendFriendRequest = async (userId: string) => {
+    try {
+      const response = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientId: userId }),
+      })
+
+      if (response.ok) {
+        setSearchResults(searchResults.map(user =>
+          user.id === userId ? { ...user, requestPending: true } : user
+        ))
+        setToast({ message: 'Friend request sent!', type: 'success' })
+      } else {
+        const data = await response.json()
+        setToast({ message: data.error || 'Failed to send request', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Failed to send friend request:', error)
+      setToast({ message: 'Failed to send friend request', type: 'error' })
+    }
+  }
+
+  const handleAcceptFriendRequest = async (userId: string) => {
+    const request = friendRequests.find(r => r.id === userId)
+    if (!request) return
+
+    try {
+      const response = await fetch('/api/friends', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendshipId: request.friendshipId, action: 'accept' }),
+      })
+
+      if (response.ok) {
+        setFriends([...friends, { ...request, isFriend: true }])
+        setFriendRequests(friendRequests.filter(r => r.id !== userId))
+        setToast({ message: 'Friend request accepted!', type: 'success' })
+      } else {
+        const data = await response.json()
+        setToast({ message: data.error || 'Failed to accept request', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Failed to accept friend request:', error)
+      setToast({ message: 'Failed to accept friend request', type: 'error' })
+    }
+  }
+
+  const handleDeclineFriendRequest = async (userId: string) => {
+    const request = friendRequests.find(r => r.id === userId)
+    if (!request) return
+
+    try {
+      const response = await fetch('/api/friends', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendshipId: request.friendshipId, action: 'decline' }),
+      })
+
+      if (response.ok) {
+        setFriendRequests(friendRequests.filter(r => r.id !== userId))
+        setToast({ message: 'Friend request declined', type: 'success' })
+      } else {
+        const data = await response.json()
+        setToast({ message: data.error || 'Failed to decline request', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Failed to decline friend request:', error)
+      setToast({ message: 'Failed to decline friend request', type: 'error' })
+    }
+  }
+
+  const handleRemoveFriend = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/friends?friendId=${userId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setFriends(friends.filter(f => f.id !== userId))
+        setToast({ message: 'Friend removed', type: 'success' })
+      } else {
+        const data = await response.json()
+        setToast({ message: data.error || 'Failed to remove friend', type: 'error' })
+      }
+    } catch (error) {
+      console.error('Failed to remove friend:', error)
+      setToast({ message: 'Failed to remove friend', type: 'error' })
+    }
   }
 
   useEffect(() => {
@@ -593,9 +698,17 @@ export default function ProfilePage() {
                         className="flex items-center justify-between p-3 border-b border-neutral-200 dark:border-neutral-700 last:border-0"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
-                            {user.avatar}
-                          </div>
+                          {user.avatarType === 'photo' && user.avatarUrl ? (
+                            <img
+                              src={user.avatarUrl}
+                              alt={user.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                              {user.avatar}
+                            </div>
+                          )}
                           <div>
                             <div className="font-medium text-neutral-900 dark:text-neutral-100">
                               {user.name}
@@ -605,9 +718,17 @@ export default function ProfilePage() {
                             </div>
                           </div>
                         </div>
-                        {user.requestPending ? (
+                        {user.isFriend ? (
+                          <span className="text-xs text-green-600 dark:text-green-400 px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
+                            Friends
+                          </span>
+                        ) : user.requestPending ? (
                           <span className="text-xs text-neutral-500 dark:text-neutral-400 px-3 py-1 bg-neutral-200 dark:bg-neutral-700 rounded-full">
                             Request Sent
+                          </span>
+                        ) : user.requestReceived ? (
+                          <span className="text-xs text-blue-600 dark:text-blue-400 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                            Pending
                           </span>
                         ) : (
                           <button
@@ -633,7 +754,7 @@ export default function ProfilePage() {
               {friendRequests.length > 0 && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
-                    Friend Requests
+                    Friend Requests ({friendRequests.length})
                   </h4>
                   <div className="space-y-2">
                     {friendRequests.map(request => (
@@ -642,9 +763,17 @@ export default function ProfilePage() {
                         className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
-                            {request.avatar}
-                          </div>
+                          {request.avatarType === 'photo' && request.avatarUrl ? (
+                            <img
+                              src={request.avatarUrl}
+                              alt={request.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                              {request.avatar}
+                            </div>
+                          )}
                           <div>
                             <div className="font-medium text-neutral-900 dark:text-neutral-100">
                               {request.name}
@@ -662,7 +791,7 @@ export default function ProfilePage() {
                             Accept
                           </button>
                           <button
-                            onClick={() => setFriendRequests(friendRequests.filter(r => r.id !== request.id))}
+                            onClick={() => handleDeclineFriendRequest(request.id)}
                             className="btn btn-ghost btn-sm"
                           >
                             Decline
@@ -691,9 +820,17 @@ export default function ProfilePage() {
                         className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
-                            {friend.avatar}
-                          </div>
+                          {friend.avatarType === 'photo' && friend.avatarUrl ? (
+                            <img
+                              src={friend.avatarUrl}
+                              alt={friend.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                              {friend.avatar}
+                            </div>
+                          )}
                           <div>
                             <div className="font-medium text-neutral-900 dark:text-neutral-100">
                               {friend.name}

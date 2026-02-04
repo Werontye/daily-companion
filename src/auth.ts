@@ -1,27 +1,10 @@
 import NextAuth from "next-auth"
-import Google from "next-auth/providers/google"
-import GitHub from "next-auth/providers/github"
 import Credentials from "next-auth/providers/credentials"
 import connectToDatabase from "@/lib/db/mongodb"
 import User from "@/lib/db/models/User"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
-    }),
-    GitHub({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -66,38 +49,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user }) {
       if (!user.email) return false
 
       try {
         await connectToDatabase()
 
-        // For OAuth providers (Google, GitHub)
-        if (account?.provider === 'google' || account?.provider === 'github') {
-          // Check if user exists
-          let existingUser = await User.findOne({ email: user.email.toLowerCase() })
-
-          if (!existingUser) {
-            // Create new user from OAuth
-            existingUser = await User.create({
-              email: user.email.toLowerCase(),
-              displayName: user.name || user.email.split('@')[0],
-              avatar: user.image || user.name?.charAt(0).toUpperCase() || 'U',
-              avatarType: user.image ? 'photo' : 'initial',
-              provider: account.provider,
-              providerId: account.providerAccountId,
-              isEmailVerified: true,
-              lastLogin: new Date(),
-            })
-          } else {
-            // Update existing user's last login
-            existingUser.lastLogin = new Date()
-            await existingUser.save()
-          }
-
-          // Store user ID in the user object for the session callback
-          user.id = existingUser._id.toString()
-        }
+        // Update last login
+        await User.findByIdAndUpdate(user.id, { lastLogin: new Date() })
 
         return true
       } catch (error) {
@@ -124,17 +83,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.sub = user.id
         token.email = user.email
         token.name = user.name
         token.picture = user.image
-      }
-
-      if (account) {
-        token.provider = account.provider
-        token.providerAccountId = account.providerAccountId
       }
 
       return token
@@ -146,8 +100,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   events: {
-    async signIn({ user, account }) {
-      console.log(`User ${user.email} signed in with ${account?.provider}`)
+    async signIn({ user }) {
+      console.log(`User ${user.email} signed in`)
     },
     async signOut() {
       console.log(`User signed out`)
