@@ -11,25 +11,25 @@ interface PageTransitionProps {
 const pageVariants = {
   initial: {
     opacity: 0,
-    y: 20,
-    scale: 0.98,
+    x: 20,
+    filter: 'blur(4px)',
   },
   animate: {
     opacity: 1,
-    y: 0,
-    scale: 1,
+    x: 0,
+    filter: 'blur(0px)',
     transition: {
-      duration: 0.4,
-      ease: [0.22, 1, 0.36, 1] as [number, number, number, number], // Custom easing for smooth feel
+      duration: 0.35,
+      ease: [0.16, 1, 0.3, 1], // Subtle easing
     },
   },
   exit: {
     opacity: 0,
-    y: -20,
-    scale: 0.98,
+    x: -20,
+    filter: 'blur(4px)',
     transition: {
-      duration: 0.3,
-      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+      duration: 0.25,
+      ease: [0.16, 1, 0.3, 1],
     },
   },
 }

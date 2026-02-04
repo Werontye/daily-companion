@@ -45,6 +45,9 @@ const config: Config = {
           400: '#4ADE80',
           500: '#22C55E',
           600: '#16A34A',
+          700: '#15803D',
+          800: '#166534',
+          900: '#14532D',
           DEFAULT: '#10B981',
         },
         warning: {
@@ -53,8 +56,12 @@ const config: Config = {
           200: '#FDE68A',
           300: '#FCD34D',
           400: '#FBBF24',
-          DEFAULT: '#F59E0B',
+          500: '#F59E0B',
           600: '#D97706',
+          700: '#B45309',
+          800: '#92400E',
+          900: '#78350F',
+          DEFAULT: '#F59E0B',
         },
         danger: {
           50: '#FEF2F2',
@@ -62,8 +69,12 @@ const config: Config = {
           200: '#FECACA',
           300: '#FCA5A5',
           400: '#F87171',
-          DEFAULT: '#EF4444',
+          500: '#EF4444',
           600: '#DC2626',
+          700: '#B91C1C',
+          800: '#991B1B',
+          900: '#7F1D1D',
+          DEFAULT: '#EF4444',
         },
         // Neutral colors (Slate-based)
         slate: {
