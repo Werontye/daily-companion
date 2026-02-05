@@ -172,8 +172,10 @@ export async function GET(request: NextRequest) {
         avatar: user.avatar,
         avatarType: user.avatarType,
         bio: user.bio,
+        socialLinks: (user as any).socialLinks || {},
         createdAt: user.createdAt,
         isAdmin: (user as any).isAdmin || false,
+        isCreator: (user as any).isCreator || false,
       },
     })
   } catch (error) {

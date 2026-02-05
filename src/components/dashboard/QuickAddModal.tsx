@@ -14,12 +14,25 @@ interface QuickAddModalProps {
   onSubmit: (task: Partial<Task>) => void
 }
 
+// Generate hour options (00-23)
+const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+  value: i.toString().padStart(2, '0'),
+  label: i.toString().padStart(2, '0'),
+}))
+
+// Generate minute options (00-59 in 5-minute increments)
+const minuteOptions = Array.from({ length: 12 }, (_, i) => ({
+  value: (i * 5).toString().padStart(2, '0'),
+  label: (i * 5).toString().padStart(2, '0'),
+}))
+
 export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps) {
   const { t } = useLanguage()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
-  const [startTimeOnly, setStartTimeOnly] = useState('')
+  const [startHour, setStartHour] = useState('')
+  const [startMinute, setStartMinute] = useState('')
   const [duration, setDuration] = useState('')
   const [priority, setPriority] = useState<TaskPriority>('medium')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -30,8 +43,8 @@ export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps)
 
     // Combine date and time if both provided
     let combinedStartTime: Date | undefined
-    if (startDate && startTimeOnly) {
-      combinedStartTime = new Date(`${startDate}T${startTimeOnly}`)
+    if (startDate && startHour && startMinute) {
+      combinedStartTime = new Date(`${startDate}T${startHour}:${startMinute}:00`)
     } else if (startDate) {
       combinedStartTime = new Date(startDate)
     }
@@ -51,7 +64,8 @@ export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps)
     setTitle('')
     setDescription('')
     setStartDate('')
-    setStartTimeOnly('')
+    setStartHour('')
+    setStartMinute('')
     setDuration('')
     setPriority('medium')
     setIsSubmitting(false)
@@ -61,7 +75,8 @@ export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps)
     setTitle('')
     setDescription('')
     setStartDate('')
-    setStartTimeOnly('')
+    setStartHour('')
+    setStartMinute('')
     setDuration('')
     setPriority('medium')
     onClose()
@@ -73,14 +88,20 @@ export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps)
     return today.toISOString().split('T')[0]
   }
 
-  // Quick time presets
+  // Quick time presets (hour, minute)
   const timePresets = [
-    { label: 'Now', value: new Date().toTimeString().slice(0, 5) },
-    { label: '9:00', value: '09:00' },
-    { label: '12:00', value: '12:00' },
-    { label: '15:00', value: '15:00' },
-    { label: '18:00', value: '18:00' },
+    { label: 'Now', hour: new Date().getHours().toString().padStart(2, '0'), minute: (Math.floor(new Date().getMinutes() / 5) * 5).toString().padStart(2, '0') },
+    { label: '09:00', hour: '09', minute: '00' },
+    { label: '12:00', hour: '12', minute: '00' },
+    { label: '15:00', hour: '15', minute: '00' },
+    { label: '18:00', hour: '18', minute: '00' },
+    { label: '21:00', hour: '21', minute: '00' },
   ]
+
+  const handlePresetClick = (hour: string, minute: string) => {
+    setStartHour(hour)
+    setStartMinute(minute)
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={t.modal.addTask} size="medium">
@@ -120,18 +141,39 @@ export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps)
               />
             </div>
 
-            {/* Time Picker */}
+            {/* Time Picker - 24 hour format */}
             <div>
               <label className="label flex items-center gap-2">
                 <ClockIcon className="h-4 w-4 text-blue-600" />
-                Time
+                Time (24h)
               </label>
-              <input
-                type="time"
-                value={startTimeOnly}
-                onChange={(e) => setStartTimeOnly(e.target.value)}
-                className="input"
-              />
+              <div className="flex gap-2 items-center">
+                <select
+                  value={startHour}
+                  onChange={(e) => setStartHour(e.target.value)}
+                  className="input flex-1"
+                >
+                  <option value="">HH</option>
+                  {hourOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-lg font-bold text-neutral-600 dark:text-neutral-400">:</span>
+                <select
+                  value={startMinute}
+                  onChange={(e) => setStartMinute(e.target.value)}
+                  className="input flex-1"
+                >
+                  <option value="">MM</option>
+                  {minuteOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -146,9 +188,9 @@ export function QuickAddModal({ isOpen, onClose, onSubmit }: QuickAddModalProps)
                   <button
                     key={preset.label}
                     type="button"
-                    onClick={() => setStartTimeOnly(preset.value)}
+                    onClick={() => handlePresetClick(preset.hour, preset.minute)}
                     className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
-                      startTimeOnly === preset.value
+                      startHour === preset.hour && startMinute === preset.minute
                         ? 'bg-blue-600 text-white border-blue-600'
                         : 'bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-600 hover:border-blue-600 dark:hover:border-blue-600'
                     }`}

@@ -7,6 +7,14 @@ export interface IWarning {
   issuedAt: Date
 }
 
+export interface ISocialLinks {
+  twitter?: string
+  instagram?: string
+  telegram?: string
+  github?: string
+  website?: string
+}
+
 export interface IUser extends Document {
   username: string
   email?: string
@@ -15,6 +23,7 @@ export interface IUser extends Document {
   avatar?: string
   avatarType: 'initial' | 'photo'
   bio?: string
+  socialLinks?: ISocialLinks
   provider?: 'credentials'
   createdAt: Date
   updatedAt: Date
@@ -71,6 +80,13 @@ const userSchema = new Schema<IUser>(
     bio: {
       type: String,
       maxlength: 500,
+    },
+    socialLinks: {
+      twitter: { type: String, trim: true },
+      instagram: { type: String, trim: true },
+      telegram: { type: String, trim: true },
+      github: { type: String, trim: true },
+      website: { type: String, trim: true },
     },
     provider: {
       type: String,

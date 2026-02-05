@@ -112,6 +112,30 @@ const config: Config = {
             dark: '#1F2937',
           },
         },
+        // Neon palette for dark mode
+        neon: {
+          cyan: '#00D4FF',
+          'cyan-dim': '#00A8CC',
+          pink: '#FF6B9D',
+          'pink-dim': '#CC5580',
+          purple: '#A855F7',
+          'purple-dim': '#8644C7',
+          green: '#00FF94',
+          'green-dim': '#00CC77',
+          yellow: '#FFD93D',
+          'yellow-dim': '#CCB031',
+          red: '#FF4757',
+          'red-dim': '#CC3946',
+          blue: '#3B82F6',
+          'blue-dim': '#2563EB',
+        },
+        // Dark mode backgrounds
+        dark: {
+          bg: '#0A0E17',
+          surface: '#12182B',
+          elevated: '#1A2340',
+          border: '#2A3655',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],

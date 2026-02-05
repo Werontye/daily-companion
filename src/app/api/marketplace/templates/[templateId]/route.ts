@@ -21,13 +21,17 @@ export async function GET(
       return NextResponse.json({ error: 'Template not found' }, { status: 404 })
     }
 
-    // Check if current user has liked this template
+    // Check if current user has liked/disliked this template
     let isLiked = false
+    let isDisliked = false
     const session = await auth()
     if (session?.user) {
       const user = await User.findOne({ email: session.user.email })
       if (user) {
         isLiked = template.likedBy?.some(
+          (id: any) => id.toString() === user._id.toString()
+        ) || false
+        isDisliked = template.dislikedBy?.some(
           (id: any) => id.toString() === user._id.toString()
         ) || false
       }
@@ -54,7 +58,9 @@ export async function GET(
         } : null,
         usageCount: template.usageCount,
         likesCount: template.likesCount,
+        dislikesCount: template.dislikesCount || 0,
         isLiked,
+        isDisliked,
         tags: template.tags,
         createdAt: template.createdAt,
       },
@@ -100,6 +106,12 @@ export async function PATCH(
         (id: any) => id.toString() === user._id.toString()
       )
       if (!alreadyLiked) {
+        // Remove from dislikes if exists
+        template.dislikedBy = template.dislikedBy?.filter(
+          (id: any) => id.toString() !== user._id.toString()
+        ) || []
+        template.dislikesCount = template.dislikedBy.length
+
         template.likedBy.push(user._id)
         template.likesCount = template.likedBy.length
         await template.save()
@@ -107,7 +119,9 @@ export async function PATCH(
       return NextResponse.json({
         message: 'Template liked',
         likesCount: template.likesCount,
+        dislikesCount: template.dislikesCount || 0,
         isLiked: true,
+        isDisliked: false,
       })
     }
 
@@ -120,7 +134,49 @@ export async function PATCH(
       return NextResponse.json({
         message: 'Template unliked',
         likesCount: template.likesCount,
+        dislikesCount: template.dislikesCount || 0,
         isLiked: false,
+        isDisliked: false,
+      })
+    }
+
+    if (action === 'dislike') {
+      const alreadyDisliked = template.dislikedBy?.some(
+        (id: any) => id.toString() === user._id.toString()
+      )
+      if (!alreadyDisliked) {
+        // Remove from likes if exists
+        template.likedBy = template.likedBy.filter(
+          (id: any) => id.toString() !== user._id.toString()
+        )
+        template.likesCount = template.likedBy.length
+
+        if (!template.dislikedBy) template.dislikedBy = []
+        template.dislikedBy.push(user._id)
+        template.dislikesCount = template.dislikedBy.length
+        await template.save()
+      }
+      return NextResponse.json({
+        message: 'Template disliked',
+        likesCount: template.likesCount,
+        dislikesCount: template.dislikesCount || 0,
+        isLiked: false,
+        isDisliked: true,
+      })
+    }
+
+    if (action === 'undislike') {
+      template.dislikedBy = template.dislikedBy?.filter(
+        (id: any) => id.toString() !== user._id.toString()
+      ) || []
+      template.dislikesCount = template.dislikedBy.length
+      await template.save()
+      return NextResponse.json({
+        message: 'Template undisliked',
+        likesCount: template.likesCount,
+        dislikesCount: template.dislikesCount || 0,
+        isLiked: false,
+        isDisliked: false,
       })
     }
 
@@ -156,7 +212,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete own template
+// DELETE - Delete own template or admin delete
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ templateId: string }> }
@@ -180,14 +236,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Template not found' }, { status: 404 })
     }
 
-    // Only author can delete
-    if (template.author.toString() !== user._id.toString()) {
+    // Allow author or admin/creator to delete
+    const isAuthor = template.author.toString() === user._id.toString()
+    const isAdmin = user.isAdmin || user.isCreator
+
+    if (!isAuthor && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     await PublicTemplate.findByIdAndDelete(templateId)
 
-    return NextResponse.json({ message: 'Template deleted' })
+    return NextResponse.json({
+      message: isAdmin && !isAuthor ? 'Template deleted by admin' : 'Template deleted'
+    })
   } catch (error) {
     console.error('Error deleting template:', error)
     return NextResponse.json(

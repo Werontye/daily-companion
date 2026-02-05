@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db/mongodb'
 import User from '@/lib/db/models/User'
+import Friendship from '@/lib/db/models/Friendship'
+import { PublicTemplate } from '@/lib/db/models/PublicTemplate'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'your-secret-key-change-this-in-production'
@@ -58,6 +60,35 @@ export async function GET(request: NextRequest) {
       .select('-password')
       .sort({ createdAt: -1 })
 
+    // Get friends count for each user
+    const userIds = users.map(u => u._id)
+    const friendships = await Friendship.find({
+      $or: [
+        { requester: { $in: userIds }, status: 'accepted' },
+        { recipient: { $in: userIds }, status: 'accepted' },
+      ]
+    })
+
+    // Get public templates count for each user
+    const publicTemplates = await PublicTemplate.aggregate([
+      { $match: { author: { $in: userIds } } },
+      { $group: { _id: '$author', count: { $sum: 1 } } }
+    ])
+
+    // Create maps for quick lookup
+    const friendsCountMap = new Map<string, number>()
+    friendships.forEach(f => {
+      const requesterId = f.requester.toString()
+      const recipientId = f.recipient.toString()
+      friendsCountMap.set(requesterId, (friendsCountMap.get(requesterId) || 0) + 1)
+      friendsCountMap.set(recipientId, (friendsCountMap.get(recipientId) || 0) + 1)
+    })
+
+    const templatesCountMap = new Map<string, number>()
+    publicTemplates.forEach(t => {
+      templatesCountMap.set(t._id.toString(), t.count)
+    })
+
     return NextResponse.json({
       currentUser: {
         isCreator: adminCheck.isCreator,
@@ -70,6 +101,8 @@ export async function GET(request: NextRequest) {
         avatar: user.avatar,
         avatarType: user.avatarType,
         bio: user.bio,
+        email: user.email,
+        socialLinks: (user as any).socialLinks || {},
         isCreator: user.isCreator || false,
         isAdmin: user.isAdmin,
         isBanned: user.isBanned,
@@ -78,6 +111,8 @@ export async function GET(request: NextRequest) {
         warnings: user.warnings || [],
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        friendsCount: friendsCountMap.get(user._id.toString()) || 0,
+        publicTemplatesCount: templatesCountMap.get(user._id.toString()) || 0,
       })),
     })
   } catch (error) {

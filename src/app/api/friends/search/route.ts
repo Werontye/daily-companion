@@ -60,12 +60,17 @@ export async function GET(request: NextRequest) {
       const friendship = friendshipMap.get(u._id.toString())
       return {
         id: u._id.toString(),
+        name: u.displayName,
         displayName: u.displayName,
         email: u.email,
         avatar: u.avatar,
         avatarType: u.avatarType,
+        avatarUrl: u.avatarType === 'photo' ? u.avatar : null,
         friendshipStatus: friendship?.status || null,
         isRequester: friendship?.isRequester || false,
+        isFriend: friendship?.status === 'accepted',
+        requestPending: friendship?.status === 'pending' && friendship?.isRequester,
+        requestReceived: friendship?.status === 'pending' && !friendship?.isRequester,
       }
     })
 

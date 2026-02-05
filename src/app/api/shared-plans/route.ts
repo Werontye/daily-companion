@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
             joinedAt: plan.members[0].joinedAt,
           },
         ],
+        tasks: [],
         taskCount: 0,
         completedTaskCount: 0,
         userRole: 'owner',

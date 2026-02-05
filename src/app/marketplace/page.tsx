@@ -29,6 +29,9 @@ interface MarketplaceTemplate {
   } | null
   usageCount: number
   likesCount: number
+  dislikesCount: number
+  isLiked?: boolean
+  isDisliked?: boolean
   tags: string[]
   createdAt: string
 }
@@ -73,6 +76,8 @@ export default function MarketplacePage() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
 
   // Check auth status
   useEffect(() => {
@@ -82,13 +87,75 @@ export default function MarketplacePage() {
         if (response.ok) {
           const data = await response.json()
           setIsAuthenticated(!!data.user)
+          setIsAdmin(data.user?.isAdmin || data.user?.isCreator || false)
         }
       } catch (error) {
         setIsAuthenticated(false)
+        setIsAdmin(false)
       }
     }
     checkAuth()
   }, [])
+
+  const handleLikeDislike = async (templateId: string, action: 'like' | 'unlike' | 'dislike' | 'undislike') => {
+    if (!isAuthenticated) {
+      window.location.href = '/auth/login'
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      const response = await fetch(`/api/marketplace/templates/${templateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Update selected template
+        if (selectedTemplate?.id === templateId) {
+          setSelectedTemplate({
+            ...selectedTemplate,
+            likesCount: data.likesCount,
+            dislikesCount: data.dislikesCount,
+            isLiked: data.isLiked,
+            isDisliked: data.isDisliked,
+          })
+        }
+        // Update templates list
+        setTemplates(templates.map(t =>
+          t.id === templateId
+            ? { ...t, likesCount: data.likesCount, dislikesCount: data.dislikesCount, isLiked: data.isLiked, isDisliked: data.isDisliked }
+            : t
+        ))
+      }
+    } catch (error) {
+      console.error('Error with like/dislike:', error)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm('Are you sure you want to delete this template?')) return
+
+    setActionLoading(true)
+    try {
+      const response = await fetch(`/api/marketplace/templates/${templateId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setSelectedTemplate(null)
+        setTemplates(templates.filter(t => t.id !== templateId))
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error)
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   const fetchTemplates = useCallback(async () => {
     setIsLoading(true)
@@ -381,12 +448,18 @@ export default function MarketplacePage() {
 
                   {/* Stats */}
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                      <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                         </svg>
                         {template.likesCount}
+                      </span>
+                      <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                        </svg>
+                        {template.dislikesCount || 0}
                       </span>
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -525,16 +598,38 @@ export default function MarketplacePage() {
                   ))}
                 </div>
 
-                {/* Stats */}
-                <div className="flex items-center gap-6 mb-6">
-                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                    <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                {/* Stats and Rating */}
+                <div className="flex items-center gap-4 mb-6">
+                  <button
+                    onClick={() => handleLikeDislike(selectedTemplate.id, selectedTemplate.isLiked ? 'unlike' : 'like')}
+                    disabled={actionLoading}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                      selectedTemplate.isLiked
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill={selectedTemplate.isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                     </svg>
-                    <span>{selectedTemplate.likesCount} likes</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                    <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span>{selectedTemplate.likesCount}</span>
+                  </button>
+                  <button
+                    onClick={() => handleLikeDislike(selectedTemplate.id, selectedTemplate.isDisliked ? 'undislike' : 'dislike')}
+                    disabled={actionLoading}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                      selectedTemplate.isDisliked
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    }`}
+                  >
+                    <svg className="w-5 h-5" fill={selectedTemplate.isDisliked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                    </svg>
+                    <span>{selectedTemplate.dislikesCount || 0}</span>
+                  </button>
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     <span>{selectedTemplate.usageCount} uses</span>
@@ -542,19 +637,30 @@ export default function MarketplacePage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleUseTemplate(selectedTemplate)}
-                    className="flex-1 btn btn-primary"
-                  >
-                    {isAuthenticated ? 'Use This Template' : 'Sign In to Use'}
-                  </button>
-                  <button
-                    onClick={() => setSelectedTemplate(null)}
-                    className="btn btn-secondary"
-                  >
-                    Close
-                  </button>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleUseTemplate(selectedTemplate)}
+                      className="flex-1 btn btn-primary"
+                    >
+                      {isAuthenticated ? 'Use This Template' : 'Sign In to Use'}
+                    </button>
+                    <button
+                      onClick={() => setSelectedTemplate(null)}
+                      className="btn btn-secondary"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteTemplate(selectedTemplate.id)}
+                      disabled={actionLoading}
+                      className="btn bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                    >
+                      {actionLoading ? 'Deleting...' : 'Delete Template (Admin)'}
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

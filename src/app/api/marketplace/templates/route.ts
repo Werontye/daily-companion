@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
       } : null,
       usageCount: t.usageCount,
       likesCount: t.likesCount,
+      dislikesCount: t.dislikesCount || 0,
       tags: t.tags,
       createdAt: t.createdAt,
     }))

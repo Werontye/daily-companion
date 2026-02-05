@@ -25,6 +25,8 @@ const publicTemplateSchema = new mongoose.Schema({
   usageCount: { type: Number, default: 0 },
   likesCount: { type: Number, default: 0 },
   likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  dislikesCount: { type: Number, default: 0 },
+  dislikedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   tags: [{ type: String }],
   isApproved: { type: Boolean, default: true }, // For moderation if needed
   createdAt: { type: Date, default: Date.now },

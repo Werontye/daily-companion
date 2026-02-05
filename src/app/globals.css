@@ -68,15 +68,39 @@
 }
 
 .dark {
-  --dc-bg: #0B1220;
-  --dc-surface: #111827;
-  --dc-surface-elevated: #1F2937;
-  --dc-border: #1F2937;
-  --dc-text: #F1F5F9;
-  --dc-text-secondary: #94A3B8;
-  --dc-text-muted: #64748B;
-  --dc-shadow-card: 0 6px 18px rgba(0, 0, 0, 0.25);
-  --dc-shadow-glow: 0 0 30px rgba(79, 70, 229, 0.4);
+  /* Neon Dark Theme - Easy on the eyes with vibrant accents */
+  --dc-primary: #00D4FF;
+  --dc-primary-light: rgba(0, 212, 255, 0.15);
+  --dc-primary-dark: #00A8CC;
+  --dc-accent: #FF6B9D;
+  --dc-accent-light: rgba(255, 107, 157, 0.15);
+
+  /* Semantic Colors - Neon variants */
+  --dc-success: #00FF94;
+  --dc-success-light: rgba(0, 255, 148, 0.15);
+  --dc-warning: #FFD93D;
+  --dc-warning-light: rgba(255, 217, 61, 0.15);
+  --dc-danger: #FF4757;
+  --dc-danger-light: rgba(255, 71, 87, 0.15);
+
+  /* Dark backgrounds */
+  --dc-bg: #0A0E17;
+  --dc-surface: #12182B;
+  --dc-surface-elevated: #1A2340;
+  --dc-border: #2A3655;
+  --dc-text: #E8F0FF;
+  --dc-text-secondary: #A8B8D8;
+  --dc-text-muted: #6B7A99;
+
+  /* Neon shadows and glows */
+  --dc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --dc-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --dc-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --dc-shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --dc-shadow-card: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 212, 255, 0.3);
+  --dc-shadow-glow: 0 0 30px rgba(0, 212, 255, 0.4);
+  --dc-shadow-glow-accent: 0 0 30px rgba(255, 107, 157, 0.4);
+  --dc-shadow-glow-success: 0 0 20px rgba(0, 255, 148, 0.3);
 }
 
 @layer base {
@@ -131,7 +155,7 @@
   }
 
   .dark ::selection {
-    background-color: rgba(124, 106, 93, 0.3);
+    background-color: rgba(0, 212, 255, 0.3);
     color: var(--dc-text);
   }
 }
@@ -162,6 +186,17 @@
     transform: translateY(-2px);
   }
 
+  /* Dark mode neon button styles */
+  .dark .btn-primary {
+    background: linear-gradient(135deg, #00D4FF 0%, #00A8CC 100%);
+    box-shadow: var(--dc-shadow-md), 0 0 0 0 rgba(0, 212, 255, 0);
+  }
+
+  .dark .btn-primary:hover:not(:disabled) {
+    box-shadow: var(--dc-shadow-lg), 0 0 25px rgba(0, 212, 255, 0.5);
+    transform: translateY(-2px);
+  }
+
   .btn-secondary {
     background: var(--dc-surface);
     @apply text-gray-700 dark:text-gray-200;
@@ -186,7 +221,28 @@
   }
 
   .dark .btn-ghost:hover:not(:disabled) {
-    background: rgba(124, 106, 93, 0.15);
+    background: rgba(0, 212, 255, 0.1);
+    color: #00D4FF;
+  }
+
+  .dark .btn-secondary {
+    background: var(--dc-surface);
+    border-color: var(--dc-border);
+  }
+
+  .dark .btn-secondary:hover:not(:disabled) {
+    background: var(--dc-surface-elevated);
+    border-color: rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
+  }
+
+  .dark .btn-danger {
+    background: linear-gradient(135deg, #FF4757 0%, #CC3946 100%);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+  }
+
+  .dark .btn-danger:hover:not(:disabled) {
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
   }
 
   .btn-danger {
@@ -238,6 +294,25 @@
   .card-selected {
     border-color: var(--dc-primary);
     box-shadow: var(--dc-shadow-lg), 0 0 0 3px rgba(124, 106, 93, 0.1);
+  }
+
+  /* Dark mode neon card styles */
+  .dark .card {
+    border: 1px solid var(--dc-border);
+  }
+
+  .dark .card:hover {
+    border-color: rgba(0, 212, 255, 0.3);
+    box-shadow: var(--dc-shadow-lg), 0 0 20px rgba(0, 212, 255, 0.1);
+  }
+
+  .dark .card-selected {
+    border-color: #00D4FF;
+    box-shadow: var(--dc-shadow-lg), 0 0 0 3px rgba(0, 212, 255, 0.15);
+  }
+
+  .dark .card-interactive:hover {
+    box-shadow: var(--dc-shadow-xl), 0 0 25px rgba(0, 212, 255, 0.15);
   }
 
   .card-static {
@@ -301,6 +376,16 @@
   .label {
     @apply block text-sm font-medium mb-1.5;
     color: var(--dc-text-secondary);
+  }
+
+  /* Dark mode neon input styles */
+  .dark .input:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+  }
+
+  .dark .input-error:focus {
+    box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.2);
   }
 
   /* ============================================
@@ -426,7 +511,8 @@
   }
 
   .dark .nav-link:hover {
-    background: rgba(124, 106, 93, 0.15);
+    background: rgba(0, 212, 255, 0.1);
+    color: #00D4FF;
   }
 
   .nav-link-active {
@@ -435,8 +521,8 @@
   }
 
   .dark .nav-link-active {
-    background: rgba(124, 106, 93, 0.2);
-    color: #B8A99A;
+    background: rgba(0, 212, 255, 0.15);
+    color: #00D4FF;
   }
 }
 

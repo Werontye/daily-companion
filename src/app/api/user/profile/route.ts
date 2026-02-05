@@ -21,7 +21,7 @@ export async function PATCH(request: NextRequest) {
     await connectToDatabase()
 
     const body = await request.json()
-    const { displayName, bio, avatar, avatarType } = body
+    const { displayName, bio, avatar, avatarType, socialLinks } = body
 
     // Build update object with only provided fields
     const updates: any = {}
@@ -29,6 +29,15 @@ export async function PATCH(request: NextRequest) {
     if (bio !== undefined) updates.bio = bio.trim()
     if (avatar !== undefined) updates.avatar = avatar
     if (avatarType !== undefined) updates.avatarType = avatarType
+    if (socialLinks !== undefined) {
+      updates.socialLinks = {
+        twitter: socialLinks.twitter?.trim() || '',
+        instagram: socialLinks.instagram?.trim() || '',
+        telegram: socialLinks.telegram?.trim() || '',
+        github: socialLinks.github?.trim() || '',
+        website: socialLinks.website?.trim() || '',
+      }
+    }
 
     // Validate displayName if provided
     if (updates.displayName !== undefined && !updates.displayName) {
@@ -68,6 +77,7 @@ export async function PATCH(request: NextRequest) {
         bio: updatedUser.bio,
         avatar: updatedUser.avatar,
         avatarType: updatedUser.avatarType,
+        socialLinks: updatedUser.socialLinks || {},
         createdAt: updatedUser.createdAt,
       }
     })

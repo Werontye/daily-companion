@@ -1,8 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db/mongodb'
 import Task from '@/lib/db/models/Task'
+import Achievement from '@/lib/db/models/Achievement'
+import Notification from '@/lib/db/models/Notification'
 import { getUserFromRequest } from '@/lib/auth/getUserFromToken'
 import mongoose from 'mongoose'
+
+// Helper function to check and unlock achievements
+async function checkAchievements(userId: mongoose.Types.ObjectId) {
+  try {
+    // Count completed tasks
+    const completedTasks = await Task.countDocuments({
+      userId,
+      status: 'completed'
+    })
+
+    // Calculate current streak (simplified - days with at least one completed task)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    let currentStreak = 0
+    let checkDate = new Date(today)
+
+    // Check backwards from today
+    for (let i = 0; i < 365; i++) {
+      const startOfDay = new Date(checkDate)
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(checkDate)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      const hasCompletedTask = await Task.findOne({
+        userId,
+        status: 'completed',
+        completedAt: { $gte: startOfDay, $lte: endOfDay }
+      })
+
+      if (hasCompletedTask) {
+        currentStreak++
+        checkDate.setDate(checkDate.getDate() - 1)
+      } else if (i === 0) {
+        // If today has no completed tasks, check yesterday
+        checkDate.setDate(checkDate.getDate() - 1)
+        continue
+      } else {
+        break
+      }
+    }
+
+    // Get all user achievements
+    const achievements = await Achievement.find({ userId })
+
+    const newlyUnlocked = []
+
+    // Check each achievement
+    for (const achievement of achievements) {
+      if (achievement.unlocked) continue
+
+      let shouldUnlock = false
+      let newProgress = achievement.progress
+
+      // First task achievement
+      if (achievement.achievementId === 'first-task') {
+        newProgress = completedTasks
+        if (completedTasks >= 1) {
+          shouldUnlock = true
+        }
+      }
+
+      // Task completion achievements
+      if (achievement.achievementId.startsWith('task-')) {
+        newProgress = completedTasks
+        if (completedTasks >= achievement.maxProgress) {
+          shouldUnlock = true
+        }
+      }
+
+      // Streak achievements
+      if (achievement.achievementId.startsWith('streak-')) {
+        newProgress = currentStreak
+        if (currentStreak >= achievement.maxProgress) {
+          shouldUnlock = true
+        }
+      }
+
+      // Update progress
+      achievement.progress = Math.min(newProgress, achievement.maxProgress)
+
+      // Unlock if criteria met
+      if (shouldUnlock) {
+        achievement.unlocked = true
+        achievement.unlockedAt = new Date()
+        newlyUnlocked.push(achievement)
+
+        // Create notification
+        await Notification.create({
+          userId,
+          title: `Achievement Unlocked! ${achievement.icon}`,
+          message: `You've unlocked "${achievement.name}": ${achievement.description}`,
+          type: 'achievement',
+          relatedId: achievement._id.toString(),
+          read: false,
+        })
+      }
+
+      await achievement.save()
+    }
+
+    return newlyUnlocked
+  } catch (error) {
+    console.error('Error checking achievements:', error)
+    return []
+  }
+}
 
 // GET /api/tasks - Get all tasks for a user
 export async function GET(request: NextRequest) {
@@ -166,9 +275,25 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // Check if task is being completed
+    const wasCompleted = task.status === 'completed'
+    const isNowCompleted = updates.status === 'completed'
+
     // Update task
     Object.assign(task, updates)
+
+    // Set completedAt when task is marked as completed
+    if (!wasCompleted && isNowCompleted) {
+      task.completedAt = new Date()
+    }
+
     await task.save()
+
+    // Check achievements if task was just completed
+    let unlockedAchievements: any[] = []
+    if (!wasCompleted && isNowCompleted) {
+      unlockedAchievements = await checkAchievements(new mongoose.Types.ObjectId(user.userId))
+    }
 
     return NextResponse.json({
       task: {
@@ -183,7 +308,13 @@ export async function PATCH(request: NextRequest) {
         duration: task.duration,
         completedAt: task.completedAt,
         updatedAt: task.updatedAt,
-      }
+      },
+      unlockedAchievements: unlockedAchievements.map(a => ({
+        id: a._id.toString(),
+        name: a.name,
+        description: a.description,
+        icon: a.icon,
+      }))
     })
   } catch (error) {
     console.error('PATCH /api/tasks error:', error)
