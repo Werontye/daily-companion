@@ -1,8 +1,15 @@
 import mongoose, { Document, Model, Schema, CallbackError } from 'mongoose'
 import bcrypt from 'bcryptjs'
 
+export interface IWarning {
+  reason: string
+  issuedBy: string
+  issuedAt: Date
+}
+
 export interface IUser extends Document {
-  email: string
+  username: string
+  email?: string
   password?: string
   displayName: string
   avatar?: string
@@ -12,19 +19,33 @@ export interface IUser extends Document {
   createdAt: Date
   updatedAt: Date
   lastLogin?: Date
-  isEmailVerified: boolean
+  isAdmin: boolean
+  isBanned: boolean
+  banReason?: string
+  bannedAt?: Date
+  bannedBy?: string
+  warnings: IWarning[]
   comparePassword(candidatePassword: string): Promise<boolean>
 }
 
 const userSchema = new Schema<IUser>(
   {
-    email: {
+    username: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
       trim: true,
       index: true,
+      minlength: 3,
+      maxlength: 20,
+      match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores'],
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      sparse: true, // Allow multiple null values
     },
     password: {
       type: String,
@@ -58,10 +79,28 @@ const userSchema = new Schema<IUser>(
     lastLogin: {
       type: Date,
     },
-    isEmailVerified: {
+    isAdmin: {
       type: Boolean,
       default: false,
     },
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+    banReason: {
+      type: String,
+    },
+    bannedAt: {
+      type: Date,
+    },
+    bannedBy: {
+      type: String,
+    },
+    warnings: [{
+      reason: { type: String, required: true },
+      issuedBy: { type: String, required: true },
+      issuedAt: { type: Date, default: Date.now },
+    }],
   },
   {
     timestamps: true,

@@ -13,11 +13,32 @@ export async function POST(request: NextRequest) {
     await connectToDatabase()
 
     const body = await request.json()
-    const { email, password, name } = body
+    const { username, password, displayName } = body
 
-    if (!email || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Username and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate username
+    const normalizedUsername = username.toLowerCase().trim()
+    if (normalizedUsername.length < 3) {
+      return NextResponse.json(
+        { error: 'Username must be at least 3 characters' },
+        { status: 400 }
+      )
+    }
+    if (normalizedUsername.length > 20) {
+      return NextResponse.json(
+        { error: 'Username must be less than 20 characters' },
+        { status: 400 }
+      )
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(normalizedUsername)) {
+      return NextResponse.json(
+        { error: 'Username can only contain letters, numbers and underscores' },
         { status: 400 }
       )
     }
@@ -30,20 +51,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() })
+    const existingUser = await User.findOne({ username: normalizedUsername })
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists with this email' },
+        { error: 'Username is already taken' },
         { status: 409 }
       )
     }
 
     // Create new user
     const newUser = await User.create({
-      email: email.toLowerCase(),
+      username: normalizedUsername,
       password, // Will be hashed by the pre-save hook
-      displayName: name || email.split('@')[0],
-      avatar: (name || email.split('@')[0]).charAt(0).toUpperCase(),
+      displayName: displayName || normalizedUsername,
+      avatar: (displayName || normalizedUsername).charAt(0).toUpperCase(),
       avatarType: 'initial',
       provider: 'credentials',
       lastLogin: new Date(),
@@ -53,7 +74,7 @@ export async function POST(request: NextRequest) {
     const token = jwt.sign(
       {
         userId: newUser._id.toString(),
-        email: newUser.email,
+        username: newUser.username,
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -63,7 +84,7 @@ export async function POST(request: NextRequest) {
       {
         user: {
           id: newUser._id.toString(),
-          email: newUser.email,
+          username: newUser.username,
           displayName: newUser.displayName,
           avatar: newUser.avatar,
           avatarType: newUser.avatarType,
@@ -83,6 +104,15 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error('POST /api/auth error:', error)
+
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { error: 'Username is already taken' },
+        { status: 409 }
+      )
+    }
+
     return NextResponse.json(
       { error: error.message || 'Failed to register user' },
       { status: 500 }
@@ -126,15 +156,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Check if user is banned
+    if ((user as any).isBanned) {
+      return NextResponse.json(
+        { error: 'Your account has been banned', banned: true, banReason: (user as any).banReason },
+        { status: 403 }
+      )
+    }
+
     return NextResponse.json({
       user: {
         id: user._id.toString(),
-        email: user.email,
+        username: user.username,
         displayName: user.displayName,
         avatar: user.avatar,
         avatarType: user.avatarType,
         bio: user.bio,
         createdAt: user.createdAt,
+        isAdmin: (user as any).isAdmin || false,
       },
     })
   } catch (error) {

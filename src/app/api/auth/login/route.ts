@@ -13,29 +13,37 @@ export async function POST(request: NextRequest) {
     await connectToDatabase()
 
     const body = await request.json()
-    const { email, password } = body
+    const { username, password } = body
 
-    if (!email || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Username and password are required' },
         { status: 400 }
       )
     }
 
-    // Find user by email (need to explicitly select password field)
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
+    // Find user by username (need to explicitly select password field)
+    const user = await User.findOne({ username: username.toLowerCase() }).select('+password')
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Invalid username or password' },
         { status: 401 }
       )
     }
 
-    // Check if user registered with OAuth (no password)
+    // Check if user is banned
+    if ((user as any).isBanned) {
+      return NextResponse.json(
+        { error: 'Your account has been banned', banned: true, banReason: (user as any).banReason },
+        { status: 403 }
+      )
+    }
+
+    // Check if user has a password
     if (!user.password) {
       return NextResponse.json(
-        { error: `This email is registered with ${user.provider}. Please use ${user.provider} to sign in.` },
+        { error: 'Invalid username or password' },
         { status: 401 }
       )
     }
@@ -44,7 +52,7 @@ export async function POST(request: NextRequest) {
     const isPasswordValid = await user.comparePassword(password)
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Invalid username or password' },
         { status: 401 }
       )
     }
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
     const token = jwt.sign(
       {
         userId: user._id.toString(),
-        email: user.email,
+        username: user.username,
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -66,11 +74,12 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       user: {
         id: user._id.toString(),
-        email: user.email,
+        username: user.username,
         displayName: user.displayName,
         avatar: user.avatar,
         avatarType: user.avatarType,
         bio: user.bio,
+        isAdmin: (user as any).isAdmin || false,
       },
     })
 

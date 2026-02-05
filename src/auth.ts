@@ -8,22 +8,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null
         }
 
         await connectToDatabase()
 
         const user = await User.findOne({
-          email: (credentials.email as string).toLowerCase()
+          username: (credentials.username as string).toLowerCase()
         }).select('+password')
 
         if (!user || !user.password) {
           return null
+        }
+
+        // Check if user is banned
+        if (user.isBanned) {
+          throw new Error('Your account has been banned')
         }
 
         const isValid = await user.comparePassword(credentials.password as string)
@@ -33,8 +38,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         return {
           id: user._id.toString(),
-          email: user.email,
           name: user.displayName,
+          email: user.username, // Using email field for username (NextAuth compatibility)
           image: user.avatar,
         }
       }
@@ -50,7 +55,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async signIn({ user }) {
-      if (!user.email) return false
+      if (!user.email) return false // email is username
 
       try {
         await connectToDatabase()
@@ -73,7 +78,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const user = await User.findById(token.sub)
 
           if (user) {
-            session.user.email = user.email
+            session.user.email = user.username // Using email field for username
             session.user.name = user.displayName
             session.user.image = user.avatarType === 'photo' ? user.avatar : undefined
           }
@@ -86,7 +91,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.sub = user.id
-        token.email = user.email
+        token.email = user.email // This is actually the username
         token.name = user.name
         token.picture = user.image
       }
@@ -101,7 +106,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   events: {
     async signIn({ user }) {
-      console.log(`User ${user.email} signed in`)
+      console.log(`User ${user.email} signed in`) // email is username
     },
     async signOut() {
       console.log(`User signed out`)

@@ -4,11 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CheckCircleIcon } from '@/components/icons'
+import { motion } from 'framer-motion'
 
 export default function LoginPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   })
   const [error, setError] = useState('')
@@ -24,8 +25,13 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          username: formData.username.toLowerCase(),
+          password: formData.password,
+        }),
       })
+
+      const data = await response.json()
 
       if (response.ok) {
         // Clear any demo data from localStorage
@@ -34,9 +40,12 @@ export default function LoginPage() {
         localStorage.removeItem('analytics')
         localStorage.removeItem('achievements')
         localStorage.removeItem('demoMode')
+        // Store user data
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user))
+        }
         router.push('/dashboard')
       } else {
-        const data = await response.json()
         setError(data.error || 'Login failed')
       }
     } catch (err) {
@@ -47,58 +56,70 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <CheckCircleIcon className="h-12 w-12 text-blue-600" />
-            <span className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            <CheckCircleIcon className="h-12 w-12 text-primary-600" />
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-500 bg-clip-text text-transparent">
               Daily Companion
             </span>
           </Link>
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
             Welcome back
           </h1>
-          <p className="text-neutral-600 dark:text-neutral-400">
+          <p className="text-slate-600 dark:text-slate-400">
             Sign in to continue to Daily Companion
           </p>
         </div>
 
-        <div className="card">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-200 dark:border-slate-700">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl mb-4"
+            >
+              {error}
+            </motion.div>
+          )}
 
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Email</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="input"
-                placeholder="john@example.com"
-                required
-              />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">@</span>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                  className="w-full pl-9 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="username"
+                  required
+                  autoFocus
+                />
+              </div>
             </div>
 
             <div>
-              <label className="label">Password</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="input pr-10"
-                  placeholder="••••••••"
+                  className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Enter your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,16 +138,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn btn-primary w-full"
+              className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-accent-500 text-white font-medium rounded-xl hover:from-primary-700 hover:to-accent-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary-500/25"
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Don't have an account?{' '}
-              <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
+              <Link href="/auth/register" className="text-primary-600 hover:text-primary-700 font-medium">
                 Sign Up
               </Link>
             </p>
