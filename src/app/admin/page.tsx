@@ -49,6 +49,24 @@ export default function AdminPage() {
       const data = await response.json()
 
       if (response.status === 403) {
+        // Try to become admin if no admins exist
+        const setupResponse = await fetch('/api/admin/setup', { method: 'POST' })
+        const setupData = await setupResponse.json()
+
+        if (setupResponse.ok && setupData.isAdmin) {
+          // Successfully became admin, retry fetching users
+          setSuccessMessage(setupData.message)
+          setTimeout(() => setSuccessMessage(''), 3000)
+          const retryResponse = await fetch('/api/admin/users')
+          const retryData = await retryResponse.json()
+          if (retryResponse.ok) {
+            setUsers(retryData.users)
+            setLoading(false)
+            return
+          }
+        }
+
+        // Not able to become admin, redirect
         router.push('/dashboard')
         return
       }
