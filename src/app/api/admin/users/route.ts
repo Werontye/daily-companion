@@ -5,12 +5,18 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'your-secret-key-change-this-in-production'
 
-// Helper to check if user is admin
-async function isAdmin(request: NextRequest): Promise<{ isAdmin: boolean; userId?: string; error?: string }> {
+// Helper to check if user is admin/creator
+async function checkAdminAccess(request: NextRequest): Promise<{
+  isAdmin: boolean
+  isCreator: boolean
+  userId?: string
+  username?: string
+  error?: string
+}> {
   const token = request.cookies.get('auth_token')?.value
 
   if (!token) {
-    return { isAdmin: false, error: 'Not authenticated' }
+    return { isAdmin: false, isCreator: false, error: 'Not authenticated' }
   }
 
   try {
@@ -18,16 +24,21 @@ async function isAdmin(request: NextRequest): Promise<{ isAdmin: boolean; userId
     const user = await User.findById(decoded.userId)
 
     if (!user) {
-      return { isAdmin: false, error: 'User not found' }
+      return { isAdmin: false, isCreator: false, error: 'User not found' }
     }
 
     if (!user.isAdmin) {
-      return { isAdmin: false, error: 'Access denied. Admin only.' }
+      return { isAdmin: false, isCreator: false, error: 'Access denied. Admin only.' }
     }
 
-    return { isAdmin: true, userId: user._id.toString() }
+    return {
+      isAdmin: true,
+      isCreator: user.isCreator || false,
+      userId: user._id.toString(),
+      username: user.username,
+    }
   } catch (err) {
-    return { isAdmin: false, error: 'Invalid token' }
+    return { isAdmin: false, isCreator: false, error: 'Invalid token' }
   }
 }
 
@@ -38,7 +49,7 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDatabase()
 
-    const adminCheck = await isAdmin(request)
+    const adminCheck = await checkAdminAccess(request)
     if (!adminCheck.isAdmin) {
       return NextResponse.json({ error: adminCheck.error }, { status: 403 })
     }
@@ -48,6 +59,10 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
 
     return NextResponse.json({
+      currentUser: {
+        isCreator: adminCheck.isCreator,
+        isAdmin: adminCheck.isAdmin,
+      },
       users: users.map(user => ({
         id: user._id.toString(),
         username: user.username,
@@ -55,6 +70,7 @@ export async function GET(request: NextRequest) {
         avatar: user.avatar,
         avatarType: user.avatarType,
         bio: user.bio,
+        isCreator: user.isCreator || false,
         isAdmin: user.isAdmin,
         isBanned: user.isBanned,
         banReason: user.banReason,
@@ -74,19 +90,24 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * DELETE /api/admin/users - Delete all users except admins (admin only, for cleanup)
+ * DELETE /api/admin/users - Delete all users except creator (creator only)
  */
 export async function DELETE(request: NextRequest) {
   try {
     await connectToDatabase()
 
-    const adminCheck = await isAdmin(request)
+    const adminCheck = await checkAdminAccess(request)
     if (!adminCheck.isAdmin) {
       return NextResponse.json({ error: adminCheck.error }, { status: 403 })
     }
 
-    // Delete all non-admin users
-    const result = await User.deleteMany({ isAdmin: { $ne: true } })
+    // Only creator can mass delete
+    if (!adminCheck.isCreator) {
+      return NextResponse.json({ error: 'Only the Creator can mass delete users' }, { status: 403 })
+    }
+
+    // Delete all users except creator
+    const result = await User.deleteMany({ isCreator: { $ne: true } })
 
     return NextResponse.json({
       message: `Deleted ${result.deletedCount} users`,

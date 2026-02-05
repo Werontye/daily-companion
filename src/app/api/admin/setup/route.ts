@@ -7,7 +7,9 @@ const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'your-secret-key-change-this-i
 const ADMIN_SETUP_SECRET = process.env.ADMIN_SETUP_SECRET || 'daily-companion-admin-setup-2024'
 
 /**
- * POST /api/admin/setup - Make current user an admin (requires secret or first user)
+ * POST /api/admin/setup - Make current user an admin/creator
+ * First user becomes Creator (can manage admins)
+ * Others need secret to become admin
  */
 export async function POST(request: NextRequest) {
   try {
@@ -43,18 +45,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (user.isAdmin) {
-      return NextResponse.json(
-        { message: 'You are already an admin', isAdmin: true }
-      )
+    if (user.isCreator) {
+      return NextResponse.json({
+        message: 'You are the Creator',
+        isCreator: true,
+        isAdmin: true,
+      })
     }
 
-    // Check if there are any admins yet
-    const adminCount = await User.countDocuments({ isAdmin: true })
+    if (user.isAdmin) {
+      return NextResponse.json({
+        message: 'You are already an admin',
+        isAdmin: true,
+      })
+    }
 
-    // If no admins exist, make this user admin
-    // Or if correct secret is provided
-    if (adminCount === 0 || secret === ADMIN_SETUP_SECRET) {
+    // Check if there is a creator yet
+    const creatorCount = await User.countDocuments({ isCreator: true })
+
+    // If no creator exists, make this user the Creator
+    if (creatorCount === 0) {
+      user.isCreator = true
+      user.isAdmin = true
+      await user.save()
+
+      return NextResponse.json({
+        message: `You are now the Creator, @${user.username}! You can manage all admins and users.`,
+        isCreator: true,
+        isAdmin: true,
+      })
+    }
+
+    // If secret is provided, make them an admin (but not creator)
+    if (secret === ADMIN_SETUP_SECRET) {
       user.isAdmin = true
       await user.save()
 
@@ -65,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Admin setup not allowed' },
+      { error: 'Admin setup not allowed. Contact the Creator.' },
       { status: 403 }
     )
   } catch (error) {

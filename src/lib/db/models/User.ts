@@ -19,6 +19,7 @@ export interface IUser extends Document {
   createdAt: Date
   updatedAt: Date
   lastLogin?: Date
+  isCreator: boolean
   isAdmin: boolean
   isBanned: boolean
   banReason?: string
@@ -78,6 +79,10 @@ const userSchema = new Schema<IUser>(
     },
     lastLogin: {
       type: Date,
+    },
+    isCreator: {
+      type: Boolean,
+      default: false,
     },
     isAdmin: {
       type: Boolean,

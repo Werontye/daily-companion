@@ -5,12 +5,18 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'your-secret-key-change-this-in-production'
 
-// Helper to check if user is admin
-async function isAdmin(request: NextRequest): Promise<{ isAdmin: boolean; userId?: string; username?: string; error?: string }> {
+// Helper to check if user is admin/creator
+async function checkAdminAccess(request: NextRequest): Promise<{
+  isAdmin: boolean
+  isCreator: boolean
+  userId?: string
+  username?: string
+  error?: string
+}> {
   const token = request.cookies.get('auth_token')?.value
 
   if (!token) {
-    return { isAdmin: false, error: 'Not authenticated' }
+    return { isAdmin: false, isCreator: false, error: 'Not authenticated' }
   }
 
   try {
@@ -18,16 +24,21 @@ async function isAdmin(request: NextRequest): Promise<{ isAdmin: boolean; userId
     const user = await User.findById(decoded.userId)
 
     if (!user) {
-      return { isAdmin: false, error: 'User not found' }
+      return { isAdmin: false, isCreator: false, error: 'User not found' }
     }
 
     if (!user.isAdmin) {
-      return { isAdmin: false, error: 'Access denied. Admin only.' }
+      return { isAdmin: false, isCreator: false, error: 'Access denied. Admin only.' }
     }
 
-    return { isAdmin: true, userId: user._id.toString(), username: user.username }
+    return {
+      isAdmin: true,
+      isCreator: user.isCreator || false,
+      userId: user._id.toString(),
+      username: user.username,
+    }
   } catch (err) {
-    return { isAdmin: false, error: 'Invalid token' }
+    return { isAdmin: false, isCreator: false, error: 'Invalid token' }
   }
 }
 
@@ -41,7 +52,7 @@ export async function PATCH(
   try {
     await connectToDatabase()
 
-    const adminCheck = await isAdmin(request)
+    const adminCheck = await checkAdminAccess(request)
     if (!adminCheck.isAdmin) {
       return NextResponse.json({ error: adminCheck.error }, { status: 403 })
     }
@@ -55,13 +66,26 @@ export async function PATCH(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Prevent admins from banning other admins
-    if (user.isAdmin && (action === 'ban' || action === 'warn')) {
-      return NextResponse.json({ error: 'Cannot ban or warn another admin' }, { status: 403 })
+    // Prevent actions on creator (only creator can modify themselves)
+    if (user.isCreator && user._id.toString() !== adminCheck.userId) {
+      return NextResponse.json({ error: 'Cannot modify the Creator' }, { status: 403 })
+    }
+
+    // Only creator can modify admin status
+    if ((action === 'makeAdmin' || action === 'removeAdmin') && !adminCheck.isCreator) {
+      return NextResponse.json({ error: 'Only the Creator can manage admin rights' }, { status: 403 })
+    }
+
+    // Prevent admins from banning other admins (unless creator)
+    if (user.isAdmin && (action === 'ban' || action === 'warn') && !adminCheck.isCreator) {
+      return NextResponse.json({ error: 'Only the Creator can ban or warn admins' }, { status: 403 })
     }
 
     switch (action) {
       case 'ban':
+        if (user.isCreator) {
+          return NextResponse.json({ error: 'Cannot ban the Creator' }, { status: 403 })
+        }
         user.isBanned = true
         user.banReason = reason || 'No reason provided'
         user.bannedAt = new Date()
@@ -125,6 +149,9 @@ export async function PATCH(
         })
 
       case 'makeAdmin':
+        if (user.isBanned) {
+          return NextResponse.json({ error: 'Cannot make a banned user an admin' }, { status: 400 })
+        }
         user.isAdmin = true
         await user.save()
         return NextResponse.json({
@@ -137,6 +164,10 @@ export async function PATCH(
         })
 
       case 'removeAdmin':
+        // Prevent removing creator's admin status
+        if (user.isCreator) {
+          return NextResponse.json({ error: 'Cannot remove Creator admin status' }, { status: 403 })
+        }
         // Prevent removing your own admin status
         if (user._id.toString() === adminCheck.userId) {
           return NextResponse.json({ error: 'Cannot remove your own admin status' }, { status: 403 })
@@ -165,7 +196,7 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/admin/users/[userId] - Delete a specific user (admin only)
+ * DELETE /api/admin/users/[userId] - Delete a specific user
  */
 export async function DELETE(
   request: NextRequest,
@@ -174,7 +205,7 @@ export async function DELETE(
   try {
     await connectToDatabase()
 
-    const adminCheck = await isAdmin(request)
+    const adminCheck = await checkAdminAccess(request)
     if (!adminCheck.isAdmin) {
       return NextResponse.json({ error: adminCheck.error }, { status: 403 })
     }
@@ -186,9 +217,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Prevent deleting admins
-    if (user.isAdmin) {
-      return NextResponse.json({ error: 'Cannot delete admin users' }, { status: 403 })
+    // Prevent deleting creator
+    if (user.isCreator) {
+      return NextResponse.json({ error: 'Cannot delete the Creator' }, { status: 403 })
+    }
+
+    // Only creator can delete admins
+    if (user.isAdmin && !adminCheck.isCreator) {
+      return NextResponse.json({ error: 'Only the Creator can delete admins' }, { status: 403 })
     }
 
     await User.findByIdAndDelete(userId)

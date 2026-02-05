@@ -7,38 +7,38 @@
    ============================================ */
 :root {
   /* Primary Colors */
-  --dc-primary: #4F46E5;
-  --dc-primary-light: #EEF2FF;
-  --dc-primary-dark: #3730A3;
+  --dc-primary: #7C6A5D;
+  --dc-primary-light: #F5EDE6;
+  --dc-primary-dark: #5D4E43;
 
   /* Accent Colors */
-  --dc-accent: #06B6D4;
-  --dc-accent-light: #CFFAFE;
+  --dc-accent: #A18072;
+  --dc-accent-light: #F5EDE6;
 
   /* Semantic Colors */
-  --dc-success: #10B981;
-  --dc-success-light: #D1FAE5;
-  --dc-warning: #F59E0B;
-  --dc-warning-light: #FEF3C7;
-  --dc-danger: #EF4444;
-  --dc-danger-light: #FEE2E2;
+  --dc-success: #6B9080;
+  --dc-success-light: #E8F3ED;
+  --dc-warning: #C4A35A;
+  --dc-warning-light: #FDF6E3;
+  --dc-danger: #C27070;
+  --dc-danger-light: #FAEAEA;
 
-  /* Neutral Colors */
-  --dc-bg: #F8FAFC;
-  --dc-surface: #FFFFFF;
-  --dc-surface-elevated: #FFFFFF;
-  --dc-border: #E2E8F0;
-  --dc-text: #0F172A;
-  --dc-text-secondary: #64748B;
-  --dc-text-muted: #94A3B8;
+  /* Neutral Colors - Warm Coffee Theme */
+  --dc-bg: #FAF7F4;
+  --dc-surface: #FFFDF9;
+  --dc-surface-elevated: #FFFDF9;
+  --dc-border: #E8DDD4;
+  --dc-text: #3D2E24;
+  --dc-text-secondary: #6B5B51;
+  --dc-text-muted: #9C8B7F;
 
-  /* Shadows */
-  --dc-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --dc-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
-  --dc-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
-  --dc-shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
-  --dc-shadow-glow: 0 0 20px rgba(79, 70, 229, 0.3);
-  --dc-shadow-card: 0 6px 18px rgba(15, 23, 42, 0.06);
+  /* Shadows - Warm tones */
+  --dc-shadow-sm: 0 1px 2px 0 rgba(61, 46, 36, 0.05);
+  --dc-shadow-md: 0 4px 6px -1px rgba(61, 46, 36, 0.07), 0 2px 4px -1px rgba(61, 46, 36, 0.04);
+  --dc-shadow-lg: 0 10px 15px -3px rgba(61, 46, 36, 0.08), 0 4px 6px -2px rgba(61, 46, 36, 0.04);
+  --dc-shadow-xl: 0 20px 25px -5px rgba(61, 46, 36, 0.1), 0 10px 10px -5px rgba(61, 46, 36, 0.04);
+  --dc-shadow-glow: 0 0 20px rgba(124, 106, 93, 0.3);
+  --dc-shadow-card: 0 6px 18px rgba(61, 46, 36, 0.06);
 
   /* Border Radius */
   --dc-radius-sm: 6px;
@@ -131,7 +131,7 @@
   }
 
   .dark ::selection {
-    background-color: rgba(79, 70, 229, 0.3);
+    background-color: rgba(124, 106, 93, 0.3);
     color: var(--dc-text);
   }
 }
@@ -152,13 +152,13 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, var(--dc-primary) 0%, #6366F1 100%);
+    background: linear-gradient(135deg, var(--dc-primary) 0%, #8B7A6E 100%);
     @apply text-white;
-    box-shadow: var(--dc-shadow-md), 0 0 0 0 rgba(79, 70, 229, 0);
+    box-shadow: var(--dc-shadow-md), 0 0 0 0 rgba(124, 106, 93, 0);
   }
 
   .btn-primary:hover:not(:disabled) {
-    box-shadow: var(--dc-shadow-lg), 0 0 20px rgba(79, 70, 229, 0.3);
+    box-shadow: var(--dc-shadow-lg), 0 0 20px rgba(124, 106, 93, 0.3);
     transform: translateY(-2px);
   }
 
@@ -186,7 +186,7 @@
   }
 
   .dark .btn-ghost:hover:not(:disabled) {
-    background: rgba(79, 70, 229, 0.15);
+    background: rgba(124, 106, 93, 0.15);
   }
 
   .btn-danger {
@@ -237,7 +237,7 @@
 
   .card-selected {
     border-color: var(--dc-primary);
-    box-shadow: var(--dc-shadow-lg), 0 0 0 3px rgba(79, 70, 229, 0.1);
+    box-shadow: var(--dc-shadow-lg), 0 0 0 3px rgba(124, 106, 93, 0.1);
   }
 
   .card-static {
@@ -283,7 +283,7 @@
   .input:focus {
     @apply outline-none;
     border-color: var(--dc-primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 106, 93, 0.1);
   }
 
   .input::placeholder {
@@ -426,7 +426,7 @@
   }
 
   .dark .nav-link:hover {
-    background: rgba(79, 70, 229, 0.15);
+    background: rgba(124, 106, 93, 0.15);
   }
 
   .nav-link-active {
@@ -435,8 +435,8 @@
   }
 
   .dark .nav-link-active {
-    background: rgba(79, 70, 229, 0.2);
-    color: #818CF8;
+    background: rgba(124, 106, 93, 0.2);
+    color: #B8A99A;
   }
 }
 
@@ -562,7 +562,7 @@
   }
 
   .text-gradient-hero {
-    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+    background: linear-gradient(135deg, #7C6A5D 0%, #A18072 50%, #C4A88C 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -745,10 +745,10 @@
 
   @keyframes pulseGlow {
     0%, 100% {
-      box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+      box-shadow: 0 0 0 0 rgba(124, 106, 93, 0.4);
     }
     50% {
-      box-shadow: 0 0 0 8px rgba(79, 70, 229, 0);
+      box-shadow: 0 0 0 8px rgba(124, 106, 93, 0);
     }
   }
 

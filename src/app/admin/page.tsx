@@ -19,6 +19,7 @@ interface User {
   avatar: string
   avatarType: 'initial' | 'photo'
   bio?: string
+  isCreator: boolean
   isAdmin: boolean
   isBanned: boolean
   banReason?: string
@@ -28,13 +29,19 @@ interface User {
   lastLogin?: string
 }
 
+interface CurrentUser {
+  isCreator: boolean
+  isAdmin: boolean
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [actionModal, setActionModal] = useState<{ type: 'warn' | 'ban' | 'delete' | null; user: User | null }>({ type: null, user: null })
+  const [actionModal, setActionModal] = useState<{ type: 'warn' | 'ban' | 'delete' | 'makeAdmin' | 'removeAdmin' | null; user: User | null }>({ type: null, user: null })
   const [actionReason, setActionReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
@@ -49,30 +56,30 @@ export default function AdminPage() {
       const data = await response.json()
 
       if (response.status === 403) {
-        // Try to become admin if no admins exist
+        // Try to become admin/creator if none exist
         const setupResponse = await fetch('/api/admin/setup', { method: 'POST' })
         const setupData = await setupResponse.json()
 
-        if (setupResponse.ok && setupData.isAdmin) {
-          // Successfully became admin, retry fetching users
+        if (setupResponse.ok && (setupData.isAdmin || setupData.isCreator)) {
           setSuccessMessage(setupData.message)
-          setTimeout(() => setSuccessMessage(''), 3000)
+          setTimeout(() => setSuccessMessage(''), 5000)
           const retryResponse = await fetch('/api/admin/users')
           const retryData = await retryResponse.json()
           if (retryResponse.ok) {
             setUsers(retryData.users)
+            setCurrentUser(retryData.currentUser)
             setLoading(false)
             return
           }
         }
 
-        // Not able to become admin, redirect
         router.push('/dashboard')
         return
       }
 
       if (response.ok) {
         setUsers(data.users)
+        setCurrentUser(data.currentUser)
       } else {
         setError(data.error || 'Failed to fetch users')
       }
@@ -102,6 +109,7 @@ export default function AdminPage() {
         setTimeout(() => setSuccessMessage(''), 3000)
       } else {
         setError(data.error || 'Action failed')
+        setTimeout(() => setError(''), 5000)
       }
     } catch (err) {
       setError('Action failed')
@@ -126,6 +134,7 @@ export default function AdminPage() {
         setTimeout(() => setSuccessMessage(''), 3000)
       } else {
         setError(data.error || 'Delete failed')
+        setTimeout(() => setError(''), 5000)
       }
     } catch (err) {
       setError('Delete failed')
@@ -135,7 +144,7 @@ export default function AdminPage() {
   }
 
   const handleCleanupUsers = async () => {
-    if (!confirm('Are you sure you want to delete ALL non-admin users? This cannot be undone!')) {
+    if (!confirm('Are you sure you want to delete ALL users except Creator? This cannot be undone!')) {
       return
     }
 
@@ -153,6 +162,7 @@ export default function AdminPage() {
         setTimeout(() => setSuccessMessage(''), 3000)
       } else {
         setError(data.error || 'Cleanup failed')
+        setTimeout(() => setError(''), 5000)
       }
     } catch (err) {
       setError('Cleanup failed')
@@ -169,6 +179,16 @@ export default function AdminPage() {
     )
   }
 
+  const getRoleBadge = (user: User) => {
+    if (user.isCreator) {
+      return <span className="ml-2 text-xs text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full font-semibold">Creator</span>
+    }
+    if (user.isAdmin) {
+      return <span className="ml-2 text-xs text-primary-600 bg-primary-100 dark:bg-primary-900/30 px-2 py-0.5 rounded-full">Admin</span>
+    }
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
       {/* Header */}
@@ -182,6 +202,11 @@ export default function AdminPage() {
                   Admin Panel
                 </span>
               </Link>
+              {currentUser?.isCreator && (
+                <span className="text-xs text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full font-semibold">
+                  Creator Mode
+                </span>
+              )}
             </div>
             <Link
               href="/dashboard"
@@ -209,21 +234,32 @@ export default function AdminPage() {
         </AnimatePresence>
 
         {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl">
-            {error}
-            <button onClick={() => setError('')} className="ml-2 underline">Dismiss</button>
-          </div>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl"
+            >
+              {error}
+              <button onClick={() => setError('')} className="ml-2 underline">Dismiss</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
             <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{users.length}</div>
             <div className="text-sm text-slate-500">Total Users</div>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <div className="text-2xl font-bold text-green-600">{users.filter(u => u.isAdmin).length}</div>
+            <div className="text-2xl font-bold text-amber-600">{users.filter(u => u.isCreator).length}</div>
+            <div className="text-sm text-slate-500">Creator</div>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+            <div className="text-2xl font-bold text-green-600">{users.filter(u => u.isAdmin && !u.isCreator).length}</div>
             <div className="text-sm text-slate-500">Admins</div>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
@@ -236,16 +272,18 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Cleanup Button */}
-        <div className="mb-6">
-          <button
-            onClick={handleCleanupUsers}
-            disabled={actionLoading}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-          >
-            Delete All Non-Admin Users
-          </button>
-        </div>
+        {/* Creator Actions */}
+        {currentUser?.isCreator && (
+          <div className="mb-6 flex gap-3">
+            <button
+              onClick={handleCleanupUsers}
+              disabled={actionLoading}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+            >
+              Delete All (except Creator)
+            </button>
+          </div>
+        )}
 
         {/* Users Table */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -254,6 +292,7 @@ export default function AdminPage() {
               <thead className="bg-slate-50 dark:bg-slate-700/50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Warnings</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Joined</th>
@@ -269,7 +308,11 @@ export default function AdminPage() {
                           {user.avatarType === 'photo' ? (
                             <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
                           ) : (
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold">
+                            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold ${
+                              user.isCreator
+                                ? 'bg-gradient-to-br from-amber-500 to-orange-500'
+                                : 'bg-gradient-to-br from-primary-500 to-accent-500'
+                            }`}>
                               {user.avatar}
                             </div>
                           )}
@@ -277,11 +320,25 @@ export default function AdminPage() {
                         <div className="ml-4">
                           <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
                             {user.displayName}
-                            {user.isAdmin && <span className="ml-2 text-xs text-primary-600 bg-primary-100 dark:bg-primary-900/30 px-2 py-0.5 rounded-full">Admin</span>}
                           </div>
                           <div className="text-sm text-slate-500">@{user.username}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.isCreator ? (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                          Creator
+                        </span>
+                      ) : user.isAdmin ? (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400">
+                          Admin
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                          User
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.isBanned ? (
@@ -295,22 +352,45 @@ export default function AdminPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm ${user.warnings.length > 0 ? 'text-yellow-600' : 'text-slate-500'}`}>
-                        {user.warnings.length} warning{user.warnings.length !== 1 ? 's' : ''}
+                      <span className={`text-sm ${user.warnings.length > 0 ? 'text-yellow-600 font-medium' : 'text-slate-500'}`}>
+                        {user.warnings.length}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => setSelectedUser(user)}
                           className="text-primary-600 hover:text-primary-700"
                         >
                           View
                         </button>
-                        {!user.isAdmin && (
+
+                        {/* Creator-only actions for managing admins */}
+                        {currentUser?.isCreator && !user.isCreator && (
+                          <>
+                            {user.isAdmin ? (
+                              <button
+                                onClick={() => handleAction(user.id, 'removeAdmin')}
+                                className="text-orange-600 hover:text-orange-700"
+                              >
+                                Remove Admin
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleAction(user.id, 'makeAdmin')}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                Make Admin
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {/* Actions for non-admins OR creator can do anything */}
+                        {(!user.isAdmin || currentUser?.isCreator) && !user.isCreator && (
                           <>
                             <button
                               onClick={() => setActionModal({ type: 'warn', user })}
@@ -369,11 +449,18 @@ export default function AdminPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-4 mb-6">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-2xl font-bold">
+                <div className={`h-16 w-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
+                  selectedUser.isCreator
+                    ? 'bg-gradient-to-br from-amber-500 to-orange-500'
+                    : 'bg-gradient-to-br from-primary-500 to-accent-500'
+                }`}>
                   {selectedUser.avatar}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{selectedUser.displayName}</h2>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    {selectedUser.displayName}
+                    {getRoleBadge(selectedUser)}
+                  </h2>
                   <p className="text-slate-500">@{selectedUser.username}</p>
                 </div>
               </div>
@@ -388,7 +475,9 @@ export default function AdminPage() {
 
                 <div>
                   <label className="text-sm font-medium text-slate-500">Role</label>
-                  <p className="text-slate-900 dark:text-slate-100">{selectedUser.isAdmin ? 'Admin' : 'User'}</p>
+                  <p className="text-slate-900 dark:text-slate-100">
+                    {selectedUser.isCreator ? 'Creator (Owner)' : selectedUser.isAdmin ? 'Admin' : 'User'}
+                  </p>
                 </div>
 
                 <div>
@@ -416,7 +505,7 @@ export default function AdminPage() {
                         </div>
                       ))}
                     </div>
-                    {!selectedUser.isAdmin && (
+                    {!selectedUser.isCreator && (
                       <button
                         onClick={() => {
                           handleAction(selectedUser.id, 'clearWarnings')
